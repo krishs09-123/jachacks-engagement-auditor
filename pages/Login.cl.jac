@@ -39,8 +39,8 @@ def:pub LoginPage() -> JsxElement {
     return <div className="auth-page">
         <Card className="auth-card">
             <CardHeader>
-                <CardTitle>Engagement Auditor</CardTitle>
-                <CardDescription>Sign in to run private pre-launch audits.</CardDescription>
+                <CardTitle>Growth Lab</CardTitle>
+                <CardDescription>Sign in to audit retention loops with private evidence.</CardDescription>
             </CardHeader>
             <CardContent>
                 {error != "" and <Alert tone="danger">{error}</Alert>}

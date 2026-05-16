@@ -1,4 +1,4 @@
-sv import from ..services.models { EngagementFinding, ConversionFinding }
+sv import from ..services.models { EngagementFinding }
 import from .ui.Badge { Badge }
 import from .ui.Card { Card, CardContent }
 
@@ -16,7 +16,7 @@ def toneForSeverity(severity: str) -> str {
     return "neutral";
 }
 
-def:pub FindingList(findings: list[EngagementFinding] | list[ConversionFinding] = []) -> JsxElement {
+def:pub FindingList(findings: list[EngagementFinding] = []) -> JsxElement {
     if len(findings) == 0 {
         return <p className="empty-state">No findings yet.</p>;
     }

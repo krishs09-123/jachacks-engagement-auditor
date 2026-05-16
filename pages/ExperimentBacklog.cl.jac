@@ -16,8 +16,8 @@ def:pub ExperimentBacklogPage() -> JsxElement {
         <header className="page-header">
             <div>
                 <p className="eyebrow">Experiment backlog</p>
-                <h1>Prioritized product tests</h1>
-                <p className="page-subtitle">Concrete experiments with primary and guardrail metrics so growth work stays legal and durable.</p>
+                <h1>Retention experiments</h1>
+                <p className="page-subtitle">Plain tests for improving repeat use while watching opt-outs, complaints, and user control.</p>
             </div>
             <RuntimeLink className="table-link" to={"/audits/" + audit_id}>Audit overview</RuntimeLink>
         </header>
@@ -27,14 +27,14 @@ def:pub ExperimentBacklogPage() -> JsxElement {
         <Card>
             <CardHeader>
                 <CardTitle>Backlog</CardTitle>
-                <CardDescription>Use these as A/B tests, product experiments, or launch-week QA checks.</CardDescription>
+                <CardDescription>Use these as product experiments or launch-week QA checks. No fake lift numbers.</CardDescription>
             </CardHeader>
             <CardContent>
                 {len(ideas) == 0 and <p className="empty-state">No experiment ideas yet.</p>}
                 {len(ideas) > 0 and <Table>
                     <TableHead>
                         <TableRow>
-                            <TableHeader>Lane</TableHeader>
+                            <TableHeader>Category</TableHeader>
                             <TableHeader>Experiment</TableHeader>
                             <TableHeader>Metrics</TableHeader>
                             <TableHeader>Effort</TableHeader>
@@ -43,7 +43,7 @@ def:pub ExperimentBacklogPage() -> JsxElement {
                     </TableHead>
                     <TableBody>
                         {[<TableRow key={idea.uid}>
-                            <TableCell><Badge tone={"accent" if idea.lane_retention_or_conversion == "retention" else "success"}>{idea.lane_retention_or_conversion}</Badge></TableCell>
+                            <TableCell><Badge tone="accent">retention</Badge></TableCell>
                             <TableCell>
                                 <strong>{idea.title}</strong>
                                 <p>{idea.hypothesis}</p>

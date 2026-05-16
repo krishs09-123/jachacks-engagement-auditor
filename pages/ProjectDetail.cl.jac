@@ -100,7 +100,7 @@ def:pub ProjectDetailPage() -> JsxElement {
             <Card>
                 <CardHeader>
                     <CardTitle>Latest run</CardTitle>
-                    <CardDescription>Retention and conversion are always scored separately.</CardDescription>
+                    <CardDescription>Latest retention-loop audit with screenshot and click-through evidence.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {latest_audit_id == "" and <p className="empty-state">No completed audit yet.</p>}

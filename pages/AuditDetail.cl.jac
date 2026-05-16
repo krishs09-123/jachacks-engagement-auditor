@@ -4,7 +4,7 @@ import from "@jac/runtime" {
     useParams as runtimeUseParams,
 }
 sv import from ..services.audits { export_report }
-sv import from ..services.models { AuditRunView, ExportReport, PageSnapshot }
+sv import from ..services.models { AuditRunView, ExportReport, PageSnapshot, VisualSnapshot, InteractionStep }
 import from ..hooks.useAuditRun { useAuditRun }
 import from ..components.AppShell { AppShell }
 import from ..components.ui.Button { Button }
@@ -28,15 +28,21 @@ def:pub AuditDetailPage() -> JsxElement {
     target_url: str = "Loading...";
     has_run: bool = False;
     retention_score: int = 0;
-    conversion_score: int = 0;
+    visual_score: int = 0;
+    interaction_score: int = 0;
     run_status: str = "";
     completed_at: str = "";
     crawl_summary: str = "";
+    visual_summary: str = "";
     legal_filter_summary: str = "";
     export_markdown: str = "";
     snapshots_count: int = 0;
+    visual_count: int = 0;
+    interaction_count: int = 0;
     recommendations_count: int = 0;
     snapshots: list[PageSnapshot] = [];
+    visual_snapshots: list[VisualSnapshot] = [];
+    interaction_steps: list[InteractionStep] = [];
     if view is not None and view.project is not None {
         project_name = view.project.name;
     }
@@ -44,15 +50,21 @@ def:pub AuditDetailPage() -> JsxElement {
         has_run = True;
         target_url = view.run.target_url;
         retention_score = view.run.retention_score;
-        conversion_score = view.run.conversion_score;
+        visual_score = view.run.visual_score;
+        interaction_score = view.run.interaction_score;
         run_status = view.run.status;
         completed_at = view.run.completed_at;
         crawl_summary = view.run.crawl_summary;
+        visual_summary = view.run.visual_summary;
         legal_filter_summary = view.run.legal_filter_summary;
     }
     if view is not None {
         snapshots = view.snapshots;
+        visual_snapshots = view.visual_snapshots;
+        interaction_steps = view.interaction_steps;
         snapshots_count = len(view.snapshots);
+        visual_count = len(view.visual_snapshots);
+        interaction_count = len(view.interaction_steps);
         recommendations_count = len(view.recommendations);
     }
     if exported is not None {
@@ -74,10 +86,6 @@ def:pub AuditDetailPage() -> JsxElement {
 
     def goRetention() -> None {
         navigate("/audits/" + audit_id + "/retention");
-    }
-
-    def goConversion() -> None {
-        navigate("/audits/" + audit_id + "/conversion");
     }
 
     def goExperiments() -> None {
@@ -104,8 +112,7 @@ def:pub AuditDetailPage() -> JsxElement {
         <Tabs>
             <TabList>
                 <TabButton active={True} onClick={goOverview}>Overview</TabButton>
-                <TabButton onClick={goRetention}>Retention</TabButton>
-                <TabButton onClick={goConversion}>Conversion</TabButton>
+                <TabButton onClick={goRetention}>Loop findings</TabButton>
                 <TabButton onClick={goExperiments}>Experiments</TabButton>
             </TabList>
         </Tabs>
@@ -113,25 +120,49 @@ def:pub AuditDetailPage() -> JsxElement {
         {has_run and <div className="score-grid">
             <Card>
                 <CardHeader>
-                    <CardTitle>Retention score</CardTitle>
-                    <CardDescription>Stickiness, habit loops, motivation, autonomy, competence, relatedness.</CardDescription>
+                    <CardTitle>Retention loop score</CardTitle>
+                    <CardDescription>Cues, actions, rewards, learning loops, attention safety, and user control.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Progress value={retention_score} label="Retention score" />
-                    <RuntimeLink className="table-link" to={"/audits/" + audit_id + "/retention"}>Open retention report</RuntimeLink>
+                    <Progress value={retention_score} label="Retention loop score" />
+                    <RuntimeLink className="table-link" to={"/audits/" + audit_id + "/retention"}>Open loop findings</RuntimeLink>
                 </CardContent>
             </Card>
             <Card>
                 <CardHeader>
-                    <CardTitle>Conversion score</CardTitle>
-                    <CardDescription>Activation, CTA clarity, trust, pricing clarity, task success, revenue path.</CardDescription>
+                    <CardTitle>Visual UX score</CardTitle>
+                    <CardDescription>Screenshot-ranked hierarchy, choice density, contrast, and processing fluency.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Progress value={conversion_score} label="Conversion score" />
-                    <RuntimeLink className="table-link" to={"/audits/" + audit_id + "/conversion"}>Open conversion report</RuntimeLink>
+                    <Progress value={visual_score} label="Visual UX score" />
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Interaction score</CardTitle>
+                    <CardDescription>Agentic click-through clarity, feedback, next-step affordance, and friction.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Progress value={interaction_score} label="Interaction score" />
                 </CardContent>
             </Card>
         </div>}
+
+        {has_run and <Card>
+            <CardHeader>
+                <CardTitle>Closed reinforcement loop</CardTitle>
+                <CardDescription>How high-retention apps turn useful sessions into repeat behavior.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="loop-strip">
+                    <div><strong>1. Cue</strong><span>Reminder, streak, unfinished task, or saved state.</span></div>
+                    <div><strong>2. Action</strong><span>Open, continue, scroll, swipe, save, or complete.</span></div>
+                    <div><strong>3. Reward</strong><span>Novelty, progress, feedback, status, or social validation.</span></div>
+                    <div><strong>4. Learning</strong><span>The app learns what keeps the user engaged.</span></div>
+                    <div><strong>5. Optimization</strong><span>Future cues and content adapt over time.</span></div>
+                </div>
+            </CardContent>
+        </Card>}
 
         {has_run and <Card>
             <CardHeader>
@@ -140,12 +171,66 @@ def:pub AuditDetailPage() -> JsxElement {
             </CardHeader>
             <CardContent>
                 <p>{crawl_summary}</p>
+                <p>{visual_summary}</p>
                 <p>{legal_filter_summary}</p>
                 <div className="action-row">
                     <RuntimeLink className="table-link" to={"/audits/" + audit_id + "/experiments"}>Open experiment backlog</RuntimeLink>
                     <Badge tone="neutral">{snapshots_count} snapshots</Badge>
+                    <Badge tone="neutral">{visual_count} screenshots</Badge>
+                    <Badge tone="neutral">{interaction_count} clicks</Badge>
                     <Badge tone="neutral">{recommendations_count} recommendations</Badge>
                 </div>
+            </CardContent>
+        </Card>}
+
+        {visual_count > 0 and <Card>
+            <CardHeader>
+                <CardTitle>Screenshot UX evidence</CardTitle>
+                <CardDescription>Browser-captured states ranked with psychology-based visual heuristics.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="visual-grid">
+                    {[<article className="visual-evidence" key={shot.uid}>
+                        <img className="visual-shot" src={shot.screenshot_data_url} alt={shot.action_label} />
+                        <div className="visual-meta">
+                            <div className="finding-topline">
+                                <Badge tone={"success" if shot.psychology_rank == "strong" else "warning" if shot.psychology_rank == "mixed" else "danger"}>{shot.psychology_rank}</Badge>
+                                <Badge tone="neutral">{str(shot.psychology_score) + "/100"}</Badge>
+                                <Badge tone="neutral">{str(shot.clickable_count) + " clickables"}</Badge>
+                            </div>
+                            <h3>{shot.action_label}</h3>
+                            <p className="mono-url">{shot.page_url}</p>
+                            <p className="evidence-text">{shot.visual_notes}</p>
+                        </div>
+                    </article> for shot in visual_snapshots]}
+                </div>
+            </CardContent>
+        </Card>}
+
+        {interaction_count > 0 and <Card>
+            <CardHeader>
+                <CardTitle>Agentic click-through evidence</CardTitle>
+                <CardDescription>Safe same-origin components the browser agent clicked and ranked after interaction.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableHeader>Component</TableHeader>
+                            <TableHeader>Result</TableHeader>
+                            <TableHeader>Rank</TableHeader>
+                            <TableHeader>Evidence</TableHeader>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {[<TableRow key={step.uid}>
+                            <TableCell>{step.element_label}</TableCell>
+                            <TableCell>{step.result}</TableCell>
+                            <TableCell>{step.psychology_rank} / {str(step.psychology_score) + "/100"} / friction {str(step.friction_score) + "/100"}</TableCell>
+                            <TableCell>{step.visual_notes}</TableCell>
+                        </TableRow> for step in interaction_steps]}
+                    </TableBody>
+                </Table>
             </CardContent>
         </Card>}
 

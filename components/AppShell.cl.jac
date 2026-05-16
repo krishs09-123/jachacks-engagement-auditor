@@ -16,17 +16,16 @@ def:pub AppShell(auditId: str = "", children: JsxElement = None) -> JsxElement {
     return <div className="app-shell">
         <aside className="side-nav">
             <div className="brand-block">
-                <div className="brand-mark">EA</div>
+                <div className="brand-mark">GL</div>
                 <div>
-                    <p className="brand-name">Engagement Auditor</p>
-                    <p className="brand-sub">Pre-launch audit</p>
+                    <p className="brand-name">Growth Lab</p>
+                    <p className="brand-sub">Retention science</p>
                 </div>
             </div>
             <nav className="nav-links">
                 <RuntimeLink to="/projects">Projects</RuntimeLink>
                 {auditId != "" and <RuntimeLink to={"/audits/" + auditId}>Audit</RuntimeLink>}
-                {auditId != "" and <RuntimeLink to={"/audits/" + auditId + "/retention"}>Retention</RuntimeLink>}
-                {auditId != "" and <RuntimeLink to={"/audits/" + auditId + "/conversion"}>Conversion</RuntimeLink>}
+                {auditId != "" and <RuntimeLink to={"/audits/" + auditId + "/retention"}>Loop findings</RuntimeLink>}
                 {auditId != "" and <RuntimeLink to={"/audits/" + auditId + "/experiments"}>Experiments</RuntimeLink>}
             </nav>
             <Button variant="ghost" onClick={handleLogout}>Log out</Button>

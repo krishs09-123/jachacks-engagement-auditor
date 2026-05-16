@@ -1,20 +1,21 @@
 :root {
-    --bg: #f7f5ef;
-    --panel: #ffffff;
-    --ink: #26231f;
-    --muted: #6d665d;
-    --line: #ded7cb;
-    --teal: #087f78;
-    --teal-dark: #05645f;
-    --berry: #9f2f5f;
-    --amber: #b66b00;
-    --danger: #b42318;
-    --success: #277245;
-    --soft-teal: #e4f3f1;
-    --soft-berry: #f6e5ed;
-    --soft-amber: #fff1d6;
-    --soft-danger: #fde7e4;
-    --shadow: 0 12px 32px rgba(38, 35, 31, 0.08);
+    --bg: #10140f;
+    --panel: #171d16;
+    --panel-2: #1d251c;
+    --ink: #f5f1e8;
+    --muted: #aab4a4;
+    --line: #303a2e;
+    --teal: #75d98b;
+    --teal-dark: #9df2aa;
+    --berry: #e0a458;
+    --amber: #f3c45f;
+    --danger: #ff6b5a;
+    --success: #8fe39a;
+    --soft-teal: #1f3a27;
+    --soft-berry: #3a2a1b;
+    --soft-amber: #3d321d;
+    --soft-danger: #3c211f;
+    --shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
 }
 
 * {
@@ -27,6 +28,17 @@ body {
     background: var(--bg);
     color: var(--ink);
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image:
+        linear-gradient(to right, rgba(245, 241, 232, 0.035) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(245, 241, 232, 0.035) 1px, transparent 1px);
+    background-size: 32px 32px;
 }
 
 a {
@@ -74,7 +86,7 @@ a:hover {
     height: 100vh;
     padding: 20px;
     border-right: 1px solid var(--line);
-    background: #fffaf1;
+    background: #0c100c;
     display: flex;
     flex-direction: column;
     gap: 24px;
@@ -92,8 +104,8 @@ a:hover {
     border-radius: 8px;
     display: grid;
     place-items: center;
-    color: #ffffff;
-    background: var(--teal);
+    color: #10140f;
+    background: linear-gradient(135deg, var(--teal), var(--amber));
     font-weight: 800;
 }
 
@@ -116,12 +128,13 @@ a:hover {
 .nav-links a {
     border-radius: 8px;
     padding: 10px 12px;
-    color: var(--ink);
+    color: var(--muted);
     font-weight: 700;
 }
 
 .nav-links a:hover {
     background: var(--soft-teal);
+    color: var(--ink);
     text-decoration: none;
 }
 
@@ -155,7 +168,7 @@ a:hover {
 
 .eyebrow {
     margin: 0;
-    color: var(--berry);
+    color: var(--teal);
     font-size: 0.78rem;
     font-weight: 800;
     text-transform: uppercase;
@@ -179,6 +192,35 @@ a:hover {
     align-items: center;
     gap: 10px;
     margin-top: 16px;
+}
+
+.loop-strip {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.loop-strip div {
+    min-height: 112px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel-2);
+}
+
+.loop-strip strong,
+.loop-strip span {
+    display: block;
+}
+
+.loop-strip strong {
+    color: var(--teal);
+    margin-bottom: 8px;
+}
+
+.loop-strip span {
+    color: var(--muted);
+    line-height: 1.4;
 }
 
 .helper-text {
@@ -257,7 +299,7 @@ a:hover {
 }
 
 .ui-button-primary {
-    color: #ffffff;
+    color: #0e130e;
     background: var(--teal);
 }
 
@@ -268,7 +310,7 @@ a:hover {
 .ui-button-secondary {
     color: var(--ink);
     background: var(--soft-amber);
-    border-color: #e7bd72;
+    border-color: #6d5424;
 }
 
 .ui-button-ghost {
@@ -296,7 +338,7 @@ a:hover {
     border-radius: 8px;
     padding: 0 12px;
     color: var(--ink);
-    background: #fffefa;
+    background: #111710;
     font: inherit;
 }
 
@@ -319,21 +361,21 @@ a:hover {
 
 .ui-badge-neutral {
     color: var(--ink);
-    background: #ece7dd;
+    background: #273025;
 }
 
 .ui-badge-accent {
-    color: #6d173d;
+    color: #f7d7a0;
     background: var(--soft-berry);
 }
 
 .ui-badge-success {
-    color: #11512b;
-    background: #dff2e6;
+    color: #0e130e;
+    background: var(--success);
 }
 
 .ui-badge-warning {
-    color: #744300;
+    color: #f9df9d;
     background: var(--soft-amber);
 }
 
@@ -378,13 +420,13 @@ a:hover {
     height: 12px;
     overflow: hidden;
     border-radius: 999px;
-    background: #eee7dc;
+    background: #273025;
 }
 
 .ui-progress-fill {
     height: 100%;
     border-radius: inherit;
-    background: var(--berry);
+    background: linear-gradient(90deg, var(--teal), var(--amber));
 }
 
 .ui-progress-value {
@@ -408,16 +450,16 @@ a:hover {
     border-radius: 8px 8px 0 0;
     padding: 0 12px;
     color: var(--ink);
-    background: #fffaf1;
+    background: #10160f;
     font: inherit;
     font-weight: 800;
     cursor: pointer;
 }
 
 .ui-tab-button.active {
-    color: #ffffff;
-    background: var(--berry);
-    border-color: var(--berry);
+    color: #0e130e;
+    background: var(--teal);
+    border-color: var(--teal);
 }
 
 .ui-dialog-backdrop {
@@ -488,6 +530,37 @@ a:hover {
     color: var(--muted);
 }
 
+.visual-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.visual-evidence {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel-2);
+}
+
+.visual-shot {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-bottom: 1px solid var(--line);
+    background: #273025;
+}
+
+.visual-meta {
+    padding: 14px;
+}
+
+.visual-meta h3 {
+    margin: 10px 0 6px;
+    font-size: 1rem;
+}
+
 .finding-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -514,7 +587,7 @@ a:hover {
     overflow: auto;
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: #fffaf1;
+    background: #111710;
     white-space: pre-wrap;
 }
 
@@ -537,6 +610,8 @@ a:hover {
     .page-header,
     .two-column,
     .score-grid,
+    .loop-strip,
+    .visual-grid,
     .finding-grid {
         grid-template-columns: 1fr;
     }

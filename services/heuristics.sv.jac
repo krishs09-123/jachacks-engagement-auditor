@@ -1,5 +1,3 @@
-import re;
-
 import from services.models { PageSnapshot, FlowStep, DeterministicSignal }
 
 def joined_snapshot_text(snapshots: list[PageSnapshot]) -> str {
@@ -27,20 +25,7 @@ def contains_any(text: str, terms: list[str]) -> bool {
     return False;
 }
 
-def count_cta_matches(snapshots: list[PageSnapshot], terms: list[str]) -> int {
-    count: int = 0;
-    for snap in snapshots {
-        for cta in snap.ctas {
-            if contains_any(cta, terms) {
-                count += 1;
-            }
-        }
-    }
-    return count;
-}
-
 def make_signal(
-    lane: str,
     category: str,
     severity: str,
     confidence: float,
@@ -56,7 +41,7 @@ def make_signal(
     impact: str,
 ) -> DeterministicSignal {
     return DeterministicSignal(
-        lane_retention_or_conversion=lane,
+        lane_retention_or_conversion="retention",
         category=category,
         severity=severity,
         confidence=confidence,
@@ -77,189 +62,220 @@ def deterministic_audit(snapshots: list[PageSnapshot], flow_steps: list[FlowStep
     signals: list[DeterministicSignal] = [];
     text: str = joined_snapshot_text(snapshots);
     page_url: str = first_page_url(snapshots);
-    signup_terms: list[str] = ["start", "sign up", "signup", "join", "try", "get started", "create account", "download"];
-    value_terms: list[str] = ["save", "faster", "easier", "without", "so you can", "because", "personalized", "recommend"];
-    trust_terms: list[str] = ["privacy", "secure", "trusted", "reviews", "customers", "testimonial", "guarantee", "terms"];
-    pricing_terms: list[str] = ["pricing", "price", "$", "free trial", "subscription", "plan"];
-    habit_terms: list[str] = ["reminder", "streak", "daily", "weekly", "notification", "save", "track", "progress"];
-    autonomy_terms: list[str] = ["choose", "customize", "control", "preferences", "skip", "not now"];
-    competence_terms: list[str] = ["progress", "score", "level", "checklist", "complete", "next step"];
-    relatedness_terms: list[str] = ["community", "team", "friends", "share", "invite", "together", "members"];
 
-    if count_cta_matches(snapshots, signup_terms) == 0 {
-        signals.append(make_signal(
-            "conversion",
-            "primary CTA clarity",
-            "high",
-            0.82,
-            page_url,
-            "No strong start/signup/get-started CTA was detected in captured CTA text.",
-            "Fogg Behavior Model ability+prompt, AARRR activation, HEART task success",
-            "Make the primary conversion action unmistakable and repeat it near the top, after proof, and at the end of the page.",
-            "Use one primary button label such as 'Start free audit' or 'Create my plan' and pair it with a short risk reducer underneath.",
-            "If the page uses one clear action verb and a risk reducer, activation click-through will increase because the prompt becomes easier to act on.",
-            "primary CTA click-through rate",
-            "bounce rate and mis-click rate",
-            "low",
-            "high",
-        ));
-    }
+    cue_terms: list[str] = ["reminder", "notification", "email me", "alert", "nudge", "daily", "weekly", "resume", "come back"];
+    action_terms: list[str] = ["start", "continue", "open", "try", "next", "save", "track", "complete", "add"];
+    reward_terms: list[str] = ["progress", "like", "comment", "reply", "badge", "level", "score", "unlock", "new", "personalized", "recommend"];
+    learning_terms: list[str] = ["personalized", "recommended", "for you", "algorithm", "tailored", "learns", "adapts", "preferences"];
+    autonomy_terms: list[str] = ["control", "choose", "customize", "preferences", "pause", "mute", "skip", "not now", "turn off"];
+    stopping_terms: list[str] = ["infinite scroll", "autoplay", "shorts", "reels", "endless", "feed"];
+    streak_terms: list[str] = ["streak", "freeze", "daily goal", "wager", "keep it going", "don't lose"];
+    social_terms: list[str] = ["like", "likes", "followers", "leaderboard", "rank", "friends", "share", "invite", "public"];
+    fomo_terms: list[str] = ["expires", "disappears", "live now", "missed", "limited-time", "limited time", "your friend posted"];
+    dark_terms: list[str] = ["hidden fee", "hard to cancel", "hard-to-cancel", "forced continuity", "prechecked", "pre-check", "countdown", "last chance", "only today"];
 
-    if not contains_any(text, value_terms) {
+    if not contains_any(text, cue_terms) {
         signals.append(make_signal(
-            "conversion",
-            "value clarity",
-            "high",
-            0.74,
-            page_url,
-            "Captured copy lacks concrete outcome words such as save, faster, easier, personalized, or because.",
-            "AARRR activation, Fogg motivation, HEART happiness",
-            "Translate the product promise into a concrete consumer outcome and place it before feature detail.",
-            "Rewrite the opening copy as 'Do [job] in [time] without [pain]' and add one proof point directly below.",
-            "If the hero names the user's job-to-be-done with a measurable outcome, more visitors will understand the offer and continue.",
-            "landing-page scroll depth",
-            "qualified signup rate",
-            "low",
-            "high",
-        ));
-    }
-
-    if not contains_any(text, trust_terms) {
-        signals.append(make_signal(
-            "conversion",
-            "trust and risk reversal",
-            "medium",
-            0.72,
-            page_url,
-            "No privacy, security, review, customer, guarantee, or terms language was detected.",
-            "Persuasion principles: authority and social proof, plus HEART task success",
-            "Add truthful trust builders that reduce perceived risk without inventing proof.",
-            "Add a compact trust row: 'No spam. Cancel anytime. Data stays private.' Only include claims the product can honor.",
-            "If truthful risk reducers appear near the CTA, more users will complete signup because perceived cost drops.",
-            "signup completion rate",
-            "refund/support complaint rate",
-            "low",
-            "medium",
-        ));
-    }
-
-    if contains_any(text, ["countdown", "only today", "last chance", "spots left"]) and not contains_any(text, ["while inventory lasts", "actual availability", "limited by capacity"]) {
-        signals.append(make_signal(
-            "conversion",
-            "legal scarcity risk",
-            "critical",
-            0.8,
-            page_url,
-            "Scarcity-style language was detected without clear evidence that the constraint is truthful.",
-            "Truthful scarcity, consumer protection, dark-pattern avoidance",
-            "Replace fake or unverifiable urgency with truthful capacity, deadline, or benefit framing.",
-            "Use 'Enrollment closes on May 31 because onboarding capacity is capped at 200 accounts' only if that is true; otherwise say 'Start now to keep your setup momentum.'",
-            "If urgency is truthful and explained, conversion can improve without increasing complaints or legal risk.",
-            "conversion rate",
-            "chargebacks, cancellations, complaints",
-            "low",
-            "high",
-        ));
-    }
-
-    if not contains_any(text, habit_terms) {
-        signals.append(make_signal(
-            "retention",
-            "habit loop trigger",
+            "cue and prompt design",
             "high",
             0.78,
             page_url,
-            "No reminder, progress, streak, saved-state, or recurring trigger language was detected.",
-            "Hook Model trigger/action/reward/investment and Fogg prompt",
-            "Introduce a benign trigger loop that helps users return for their own goal, not a manipulative interruption.",
-            "After activation, ask users to set a useful reminder cadence and show the next saved task on return.",
-            "If users create a reminder tied to their own goal, week-two return rate will rise because the prompt is timely and user-controlled.",
-            "D7 return rate",
-            "notification opt-out rate",
+            "The crawler did not find reminders, notifications, saved tasks, or explicit return prompts.",
+            "Fogg Behavior Model prompts; Stothart et al. on notification attention cost",
+            "Add user-controlled return cues that help people resume a useful task without hijacking attention.",
+            "After the first useful action, ask 'Want a reminder to finish this later?' with options for cadence and 'not now'.",
+            "If users choose their own reminder timing, more people will return because the cue supports an existing goal.",
+            "returning users",
+            "notification opt-out rate and complaint rate",
             "medium",
             "high",
         ));
     }
 
-    if not contains_any(text, autonomy_terms) {
+    if not contains_any(text, action_terms) {
         signals.append(make_signal(
-            "retention",
-            "autonomy support",
+            "action clarity",
             "medium",
-            0.69,
+            0.72,
             page_url,
-            "Captured content does not show choose/customize/control/skip style autonomy language.",
-            "Self-Determination Theory autonomy",
-            "Give users meaningful control during onboarding so engagement feels self-directed.",
-            "Add setup choices like 'Pick your goal', 'Choose reminder cadence', and 'Skip for now' instead of forcing every step.",
-            "If onboarding gives useful choices, more users will finish setup and feel ownership over the product.",
-            "onboarding completion rate",
-            "time-to-value and skipped-step recovery rate",
-            "medium",
-            "medium",
-        ));
-    }
-
-    if not contains_any(text, competence_terms) {
-        signals.append(make_signal(
-            "retention",
-            "competence feedback",
-            "medium",
-            0.7,
-            page_url,
-            "No progress, checklist, next-step, score, or completion language was detected.",
-            "Self-Determination Theory competence, HEART task success",
-            "Make progress visible so the user knows what they have achieved and what to do next.",
-            "Add a 3-step progress module with one completed state after the user's first meaningful action.",
-            "If users see progress and the next best action, activation-to-retention conversion will improve.",
-            "activated users reaching second session",
-            "support tickets from confusion",
+            "The page copy does not clearly name a small next action such as start, continue, save, track, or complete.",
+            "Fogg Behavior Model ability; Lally et al. on habit formation through repeatable actions",
+            "Make the first repeatable action concrete, small, and easy to perform.",
+            "Use a button like 'Save my first item' or 'Continue setup' and keep the action visible after each state change.",
+            "If the next action is small and visible, more users will complete the first loop and remember how to return.",
+            "completed core actions",
+            "misclicks and support questions",
             "low",
             "medium",
         ));
     }
 
-    if not contains_any(text, relatedness_terms) {
+    if not contains_any(text, reward_terms) {
         signals.append(make_signal(
-            "retention",
-            "relatedness and referral",
-            "low",
-            0.62,
+            "reward feedback",
+            "high",
+            0.76,
             page_url,
-            "No community, invite, share, team, or together language was captured.",
-            "Self-Determination Theory relatedness, AARRR referral, persuasion liking",
-            "Add a truthful collaborative or sharing moment only where it helps the user's job.",
-            "Offer 'Share this setup with a friend' after the user gets value, not before activation.",
-            "If sharing follows a valuable moment, referral intent can increase without interrupting activation.",
-            "referral invite rate",
-            "activation completion rate",
+            "No progress, novelty, social feedback, status, or completion reward language was detected.",
+            "Intermittent reinforcement; Schultz et al. on reward prediction error; Self-Determination Theory competence",
+            "Add honest feedback after the user's action so the loop has a satisfying reward without gambling-style pressure.",
+            "Show 'Saved', a visible progress step, or a useful new recommendation after the user completes the action.",
+            "If users get clear feedback after acting, they will better understand the value of coming back.",
+            "repeat sessions",
+            "time spent without completing a task",
             "medium",
-            "low",
+            "high",
         ));
+    }
+
+    if contains_any(text, learning_terms) and not contains_any(text, autonomy_terms) {
+        signals.append(make_signal(
+            "personalized reinforcement controls",
+            "high",
+            0.74,
+            page_url,
+            "The page mentions personalization or recommendations but does not show control, preference, mute, or pause language.",
+            "Personalized reinforcement systems; Lindstrom et al. on learning agents shaping engagement",
+            "Make personalization transparent and controllable so the system adapts to user goals instead of only maximizing engagement.",
+            "Add 'Why am I seeing this?', 'Tune recommendations', and 'Pause personalization' affordances near adaptive content.",
+            "If users can tune the learning loop, retention can become more durable because the app feels useful rather than manipulative.",
+            "returning users",
+            "hidden-content reports and opt-out rate",
+            "medium",
+            "high",
+        ));
+    }
+
+    if contains_any(text, stopping_terms) {
+        signals.append(make_signal(
+            "missing stopping cues",
+            "critical",
+            0.79,
+            page_url,
+            "The page references endless feeds, autoplay, short-form feeds, or infinite scroll patterns.",
+            "Stopping-cue removal and attention-capture deceptive design; Monge Roffarello et al. CHI 2023",
+            "Add stopping cues and session boundaries so continued use is intentional.",
+            "Insert natural breakpoints such as 'You're caught up', 'Take a pause', or a finite queue count after a content set.",
+            "If the interface restores stopping cues, users can build trust while still returning for useful sessions.",
+            "intentional repeat sessions",
+            "rage scrolls, complaints, and long idle sessions",
+            "medium",
+            "high",
+        ));
+    }
+
+    if contains_any(text, streak_terms) and not contains_any(text, ["pause", "freeze", "grace", "skip", "recover"]) {
+        signals.append(make_signal(
+            "streak loss pressure",
+            "high",
+            0.76,
+            page_url,
+            "Streak or daily-goal language appears without obvious recovery, pause, or grace controls.",
+            "Prospect Theory loss aversion; habit continuity research",
+            "Use streaks as supportive progress memory, not punishment for missing a day.",
+            "Pair any streak with 'pause', 'recover', and 'your progress is safe' messaging.",
+            "If streaks feel supportive instead of threatening, users can keep returning without resentment.",
+            "returning users",
+            "streak-related churn and support complaints",
+            "low",
+            "medium",
+        ));
+    }
+
+    if contains_any(text, social_terms) and not contains_any(text, ["private", "hide", "control", "friends only", "optional"]) {
+        signals.append(make_signal(
+            "social validation pressure",
+            "medium",
+            0.68,
+            page_url,
+            "Social metrics or public comparison language appears without clear privacy or visibility controls.",
+            "Sherman et al. on social likes; social validation and adolescent vulnerability",
+            "Make social validation optional and protect users from unwanted public ranking.",
+            "Add privacy controls for likes, leaderboards, friend streaks, and public activity before exposing metrics.",
+            "If social features feel controllable, users can benefit from belonging without pressure-driven checking.",
+            "repeat participation",
+            "privacy opt-outs and negative feedback",
+            "medium",
+            "medium",
+        ));
+    }
+
+    if contains_any(text, fomo_terms) {
+        signals.append(make_signal(
+            "FoMO and urgency pressure",
+            "high",
+            0.72,
+            page_url,
+            "The crawler found expiring, missed, live-now, or limited-time language.",
+            "Przybylski et al. on FoMO; attention and social exclusion research",
+            "Replace anxiety-based urgency with clear value, calendar control, and truthful deadlines.",
+            "Explain why something expires, let users save it, and avoid 'you missed out' copy unless it is purely factual.",
+            "If urgency is truthful and user-controlled, people can return without anxiety-driven checking.",
+            "returning users",
+            "unsubscribes, muted notifications, and complaints",
+            "low",
+            "medium",
+        ));
+    }
+
+    if contains_any(text, dark_terms) {
+        signals.append(make_signal(
+            "dark-pattern risk",
+            "critical",
+            0.82,
+            page_url,
+            "Potential dark-pattern language was detected, such as hidden fees, hard cancellation, fake urgency, or forced continuity.",
+            "Gray et al. and Mathur et al. on dark patterns; FTC consumer harm guidance",
+            "Remove manipulative pressure and make pricing, consent, cancellation, and deadlines clear.",
+            "Use visible cancel controls, plain pricing, unchecked consent, and factual deadlines only.",
+            "If the product removes dark patterns, retention quality improves because users trust the service.",
+            "returning users",
+            "refunds, complaints, chargebacks, and cancellation support requests",
+            "medium",
+            "high",
+        ));
+    }
+
+    for step in flow_steps {
+        if step.friction_score >= 35 {
+            signals.append(make_signal(
+                "loop friction",
+                "medium",
+                0.7,
+                step.page_url,
+                f"The crawler estimated interaction friction at {step.friction_score}/100 for {step.step_type}.",
+                "Fogg Behavior Model ability; HEART task success",
+                "Reduce effort between cue, action, and reward so the loop can complete cleanly.",
+                "Cut optional fields, show one next action, and provide immediate feedback after the click.",
+                "If friction drops, more users will finish the core action and understand why to return.",
+                "completed core actions",
+                "drop-offs and support questions",
+                "medium",
+                "medium",
+            ));
+        }
     }
 
     for snap in snapshots {
         if snap.input_count >= 8 {
             signals.append(make_signal(
-                "conversion",
-                "form friction",
+                "onboarding friction",
                 "high",
                 0.83,
                 snap.page_url,
                 f"Detected {snap.input_count} inputs and {snap.form_count} forms on a captured page.",
-                "Fogg ability, HEART task success, AARRR activation",
-                "Shorten the first conversion step and defer non-essential questions until after value is shown.",
-                "Ask only for email/password or magic-link email first; move profile enrichment to a post-activation checklist.",
-                "If the first form has fewer fields, signup completion will rise because the required ability cost drops.",
-                "form completion rate",
-                "lead quality and support contact rate",
+                "Fogg Behavior Model ability; HEART task success",
+                "Shorten setup before the first reward so users experience value sooner.",
+                "Ask only for the minimum information needed for the first useful result; move the rest to a later checklist.",
+                "If setup is lighter before the first reward, more users will complete the first session.",
+                "completed setup",
+                "support questions and abandoned forms",
                 "medium",
                 "high",
             ));
         }
         if len(snap.risk_notes) > 0 {
             signals.append(make_signal(
-                "retention",
                 "prompt-injection resilience",
                 "medium",
                 0.9,
@@ -269,7 +285,7 @@ def deterministic_audit(snapshots: list[PageSnapshot], flow_steps: list[FlowStep
                 "Keep audit prompts and content boundaries explicit; never let website copy instruct the evaluator.",
                 "Label crawler evidence as untrusted in every model call and strip scripts/forms before storage.",
                 "If prompt-injection text is treated as evidence only, report integrity will hold even against hostile pages.",
-                "audit recommendation validity",
+                "recommendation validity",
                 "unsafe recommendation rate",
                 "low",
                 "medium",

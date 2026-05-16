@@ -3,6 +3,10 @@ import time;
 import html;
 import socket;
 import ipaddress;
+import json;
+import os;
+import subprocess;
+import from typing { cast }
 import from datetime { datetime, timezone }
 import from urllib.parse { urlparse, urljoin, urldefrag }
 import from urllib.request { Request, build_opener, ProxyHandler }
@@ -13,11 +17,50 @@ import from services.models {
     CrawlResult,
     PageSnapshot,
     FlowStep,
+    VisualSnapshot,
+    InteractionStep,
+    VisualAuditResult,
 }
 
 glob USER_AGENT = "EngagementAuditor/0.1 safe-prelaunch-crawler";
 glob MAX_PAGE_BYTES = 650000;
 glob MAX_REDIRECT_HINT = 10;
+
+def dict_str(data: dict, key: str) -> str {
+    if key in data {
+        return str(data[key]);
+    }
+    return "";
+}
+
+def dict_int(data: dict, key: str) -> int {
+    if key in data {
+        try {
+            return int(data[key]);
+        } except Exception as e {
+            return 0;
+        }
+    }
+    return 0;
+}
+
+def dict_float(data: dict, key: str) -> float {
+    if key in data {
+        try {
+            return float(str(data[key]));
+        } except Exception as e {
+            return 0.0;
+        }
+    }
+    return 0.0;
+}
+
+def dict_list(data: dict, key: str) -> list[dict] {
+    if key in data {
+        return cast(list[dict], data[key]);
+    }
+    return [];
+}
 
 def now_iso() -> str {
     return datetime.now(timezone.utc).isoformat();
@@ -363,4 +406,75 @@ def crawl_site(start_url: str, audit_id: str, max_pages: int = 5, max_depth: int
         summary=f"Captured {len(snapshots)} safe HTML page snapshots within a {time_budget_seconds}s budget. Raw forms, credentials, scripts, and sensitive field values were not stored.",
         blocked_reason="",
     );
+}
+
+def run_visual_audit(start_url: str, audit_id: str, max_clicks: int = 8) -> VisualAuditResult {
+    script_path: str = os.path.join(os.getcwd(), "tools", "visual_audit.py");
+    output_dir: str = os.path.join(os.getcwd(), ".jac", "data", "visual");
+    if not os.path.exists(script_path) {
+        return VisualAuditResult(ok=False, summary="", blocked_reason="Visual audit helper script was not found.", visual_score=0, interaction_score=0, screenshots=[], interactions=[]);
+    }
+    try {
+        result = subprocess.run(
+            ["python", script_path, "--url", start_url, "--audit-id", audit_id, "--output-dir", output_dir, "--max-clicks", str(max_clicks)],
+            capture_output=True,
+            text=True,
+            timeout=70,
+        );
+        if result.returncode != 0 {
+            return VisualAuditResult(ok=False, summary="", blocked_reason=str(result.stderr), visual_score=0, interaction_score=0, screenshots=[], interactions=[]);
+        }
+        data: dict = cast(dict, json.loads(str(result.stdout)));
+        if not bool(data["ok"]) {
+            return VisualAuditResult(ok=False, summary="", blocked_reason=dict_str(data, "reason"), visual_score=0, interaction_score=0, screenshots=[], interactions=[]);
+        }
+        screenshots: list[VisualSnapshot] = [];
+        for row in dict_list(data, "screenshots") {
+            screenshots.append(VisualSnapshot(
+                audit_id=audit_id,
+                page_url=dict_str(row, "url"),
+                title=dict_str(row, "title"),
+                action_label=dict_str(row, "action_label"),
+                screenshot_path=dict_str(row, "screenshot_path"),
+                screenshot_data_url=dict_str(row, "screenshot_data_url"),
+                viewport_width=dict_int(row, "width"),
+                viewport_height=dict_int(row, "height"),
+                brightness=dict_float(row, "brightness"),
+                color_variance=dict_float(row, "color_variance"),
+                visual_complexity=dict_float(row, "visual_complexity"),
+                clickable_count=dict_int(row, "clickable_count"),
+                psychology_rank=dict_str(row, "psychology_rank"),
+                psychology_score=dict_int(row, "psychology_score"),
+                visual_notes=dict_str(row, "visual_notes"),
+            ));
+        }
+        interactions: list[InteractionStep] = [];
+        for row in dict_list(data, "interactions") {
+            interactions.append(InteractionStep(
+                audit_id=audit_id,
+                step_order=dict_int(row, "step_order"),
+                element_label=dict_str(row, "element_label"),
+                element_tag=dict_str(row, "element_tag"),
+                from_url=dict_str(row, "from_url"),
+                to_url=dict_str(row, "to_url"),
+                result=dict_str(row, "result"),
+                screenshot_path=dict_str(row, "screenshot_path"),
+                psychology_rank=dict_str(row, "psychology_rank"),
+                psychology_score=dict_int(row, "psychology_score"),
+                visual_notes=dict_str(row, "visual_notes"),
+                friction_score=dict_int(row, "friction_score"),
+            ));
+        }
+        return VisualAuditResult(
+            ok=True,
+            summary=dict_str(data, "summary"),
+            blocked_reason="",
+            visual_score=dict_int(data, "visual_score"),
+            interaction_score=dict_int(data, "interaction_score"),
+            screenshots=screenshots,
+            interactions=interactions,
+        );
+    } except Exception as e {
+        return VisualAuditResult(ok=False, summary="", blocked_reason="Visual audit failed safely: " + str(e), visual_score=0, interaction_score=0, screenshots=[], interactions=[]);
+    }
 }

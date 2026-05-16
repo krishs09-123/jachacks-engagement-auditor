@@ -2,7 +2,6 @@ sv import from ..services.audits {
     start_audit,
     get_audit_run,
     list_engagement_findings,
-    list_conversion_findings,
     list_experiment_ideas,
     export_report,
 }
@@ -10,7 +9,6 @@ sv import from ..services.models {
     AuditMutationResult,
     AuditRunView,
     EngagementFinding,
-    ConversionFinding,
     ExperimentIdea,
     ExportReport,
 }
@@ -18,7 +16,6 @@ sv import from ..services.models {
 obj AuditRunState {
     has view: AuditRunView | None = None;
     has engagementFindings: list[EngagementFinding] = [];
-    has conversionFindings: list[ConversionFinding] = [];
     has experimentIdeas: list[ExperimentIdea] = [];
     has loading: bool = False;
     has error: str = "";
@@ -36,7 +33,6 @@ obj StartAuditState {
 def:pub useAuditRun(audit_id: str) -> AuditRunState {
     has view: AuditRunView | None = None;
     has engagementFindings: list[EngagementFinding] = [];
-    has conversionFindings: list[ConversionFinding] = [];
     has experimentIdeas: list[ExperimentIdea] = [];
     has loading: bool = False;
     has error: str = "";
@@ -56,13 +52,10 @@ def:pub useAuditRun(audit_id: str) -> AuditRunState {
                 error = loaded_view.message;
             }
             loaded_engagement: list[EngagementFinding] = [];
-            loaded_conversion: list[ConversionFinding] = [];
             loaded_experiments: list[ExperimentIdea] = [];
             loaded_engagement = await list_engagement_findings(audit_id);
-            loaded_conversion = await list_conversion_findings(audit_id);
             loaded_experiments = await list_experiment_ideas(audit_id);
             engagementFindings = loaded_engagement;
-            conversionFindings = loaded_conversion;
             experimentIdeas = loaded_experiments;
         } except Exception as e {
             error = f"Could not load audit: {e}";
@@ -89,7 +82,6 @@ def:pub useAuditRun(audit_id: str) -> AuditRunState {
     return AuditRunState(
         view=view,
         engagementFindings=engagementFindings,
-        conversionFindings=conversionFindings,
         experimentIdeas=experimentIdeas,
         loading=loading,
         error=error,

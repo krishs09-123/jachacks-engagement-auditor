@@ -72,8 +72,8 @@ def:pub DashboardPage() -> JsxElement {
         <header className="page-header">
             <div>
                 <p className="eyebrow">Projects dashboard</p>
-                <h1>Consumer app audits</h1>
-                <p className="page-subtitle">Create a project, audit a live URL, and split retention from conversion recommendations.</p>
+                <h1>Retention loop audits</h1>
+                <p className="page-subtitle">Audit live products for behavioral reinforcement loops, visual evidence, and manipulative engagement risk.</p>
             </div>
             <Button onClick={handleOpenDialog}>New project</Button>
         </header>

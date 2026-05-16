@@ -22,20 +22,20 @@ def:pub RetentionReportPage() -> JsxElement {
         <header className="page-header">
             <div>
                 <p className="eyebrow">Retention report</p>
-                <h1>Engagement and stickiness</h1>
-                <p className="page-subtitle">Fogg, HEART, Hook Model, SDT, AARRR retention, and legal persuasion checks.</p>
+                <h1>Behavior loop findings</h1>
+                <p className="page-subtitle">Plain-English retention science: cues, actions, rewards, learning loops, notifications, streak pressure, social validation, FoMO, and dark-pattern risk.</p>
             </div>
             <RuntimeLink className="table-link" to={"/audits/" + audit_id}>Audit overview</RuntimeLink>
         </header>
 
         {auditState.error != "" and <Alert tone="danger">{auditState.error}</Alert>}
         {has_run and <Card>
-            <CardHeader>
-                <CardTitle>Retention score</CardTitle>
-                <CardDescription>Separate from conversion so habit quality does not get buried under signup optimization.</CardDescription>
+                <CardHeader>
+                <CardTitle>Retention loop score</CardTitle>
+                <CardDescription>Broad signal for whether the product supports repeat use without manipulative pressure.</CardDescription>
             </CardHeader>
             <CardContent>
-                <Progress value={retention_score} label="Retention score" />
+                <Progress value={retention_score} label="Retention loop score" />
             </CardContent>
         </Card>}
 
