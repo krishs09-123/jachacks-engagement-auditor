@@ -29,11 +29,33 @@ def:pub FindingList(findings: list[EngagementFinding] = []) -> JsxElement {
                     <Badge tone={"success" if finding.legal_safe else "danger"}>{"legal-safe" if finding.legal_safe else "needs review"}</Badge>
                 </div>
                 <h3>{finding.recommendation}</h3>
+                <div className="finding-proof">
+                    <div>
+                        <dt>Where</dt>
+                        <dd>{finding.issue_location}</dd>
+                    </div>
+                    <div>
+                        <dt>Evidence ref</dt>
+                        <dd>{finding.evidence_ref}</dd>
+                    </div>
+                </div>
                 <p className="evidence-text">{finding.evidence}</p>
                 <dl className="finding-grid">
                     <div>
+                        <dt>Proof</dt>
+                        <dd>{finding.proof}</dd>
+                    </div>
+                    <div>
+                        <dt>Why it matters</dt>
+                        <dd>{finding.why_it_matters}</dd>
+                    </div>
+                    <div>
                         <dt>Research basis</dt>
                         <dd>{finding.research_basis}</dd>
+                    </div>
+                    <div>
+                        <dt>Fix logic</dt>
+                        <dd>{finding.fix_guidance}</dd>
                     </div>
                     <div>
                         <dt>Exact tip</dt>

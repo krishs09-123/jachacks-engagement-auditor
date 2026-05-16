@@ -46,9 +46,14 @@ def make_signal(
         severity=severity,
         confidence=confidence,
         page_url=page_url,
+        issue_location=category + " on " + page_url,
+        evidence_ref="Text snapshot: " + page_url,
         evidence=evidence,
+        proof=evidence,
+        why_it_matters=research_basis + " applies here because the captured page evidence affects whether users can understand, complete, or safely repeat the core action.",
         research_basis=research_basis,
         recommendation=recommendation,
+        fix_guidance=recommendation + " " + exact_tip,
         exact_ui_or_copy_tip=exact_tip,
         experiment_hypothesis=hypothesis,
         primary_metric=primary_metric,
@@ -58,10 +63,52 @@ def make_signal(
     );
 }
 
+def is_retention_product_surface(text: str) -> bool {
+    indicators: list[str] = [
+        "app",
+        "dashboard",
+        "account",
+        "login",
+        "sign up",
+        "signup",
+        "profile",
+        "save",
+        "saved",
+        "project",
+        "task",
+        "track",
+        "progress",
+        "personalized",
+        "recommend",
+        "course",
+        "lesson",
+        "community",
+        "feed",
+        "subscribe",
+        "notification",
+        "reminder",
+    ];
+    return contains_any(text, indicators);
+}
+
+def has_meaningful_action_surface(text: str, snapshots: list[PageSnapshot]) -> bool {
+    if contains_any(text, ["start", "try", "continue", "save", "create", "join", "sign up", "subscribe", "book", "buy", "add", "learn more"]) {
+        return True;
+    }
+    for snap in snapshots {
+        if len(snap.ctas) > 0 or snap.form_count > 0 or snap.input_count > 0 {
+            return True;
+        }
+    }
+    return False;
+}
+
 def deterministic_audit(snapshots: list[PageSnapshot], flow_steps: list[FlowStep]) -> list[DeterministicSignal] {
     signals: list[DeterministicSignal] = [];
     text: str = joined_snapshot_text(snapshots);
     page_url: str = first_page_url(snapshots);
+    retention_surface: bool = is_retention_product_surface(text);
+    action_surface: bool = has_meaningful_action_surface(text, snapshots);
 
     cue_terms: list[str] = ["reminder", "notification", "email me", "alert", "nudge", "daily", "weekly", "resume", "come back"];
     action_terms: list[str] = ["start", "continue", "open", "try", "next", "save", "track", "complete", "add"];
@@ -74,7 +121,7 @@ def deterministic_audit(snapshots: list[PageSnapshot], flow_steps: list[FlowStep
     fomo_terms: list[str] = ["expires", "disappears", "live now", "missed", "limited-time", "limited time", "your friend posted"];
     dark_terms: list[str] = ["hidden fee", "hard to cancel", "hard-to-cancel", "forced continuity", "prechecked", "pre-check", "countdown", "last chance", "only today"];
 
-    if not contains_any(text, cue_terms) {
+    if retention_surface and not contains_any(text, cue_terms) {
         signals.append(make_signal(
             "cue and prompt design",
             "high",
@@ -92,7 +139,7 @@ def deterministic_audit(snapshots: list[PageSnapshot], flow_steps: list[FlowStep
         ));
     }
 
-    if not contains_any(text, action_terms) {
+    if action_surface and not contains_any(text, action_terms) {
         signals.append(make_signal(
             "action clarity",
             "medium",
@@ -110,7 +157,7 @@ def deterministic_audit(snapshots: list[PageSnapshot], flow_steps: list[FlowStep
         ));
     }
 
-    if not contains_any(text, reward_terms) {
+    if action_surface and retention_surface and not contains_any(text, reward_terms) {
         signals.append(make_signal(
             "reward feedback",
             "high",

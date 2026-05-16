@@ -530,6 +530,29 @@ a:hover {
     color: var(--muted);
 }
 
+.finding-proof {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 12px 0;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel-2);
+}
+
+.finding-proof dt {
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.finding-proof dd {
+    margin: 4px 0 0;
+    line-height: 1.4;
+}
+
 .visual-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -613,6 +636,10 @@ a:hover {
     .loop-strip,
     .visual-grid,
     .finding-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .finding-proof {
         grid-template-columns: 1fr;
     }
 

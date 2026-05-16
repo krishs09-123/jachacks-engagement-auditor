@@ -76,7 +76,7 @@ def build_evidence_pack(
     }
     parts.append("Deterministic signals:");
     for signal in signals {
-        parts.append(f"{signal.lane_retention_or_conversion} | {signal.category} | {signal.severity} | {signal.evidence} | {signal.research_basis}");
+        parts.append(f"{signal.lane_retention_or_conversion} | {signal.category} | {signal.severity} | {signal.issue_location} | {signal.evidence_ref} | {signal.evidence} | proof: {signal.proof} | why: {signal.why_it_matters} | fix: {signal.fix_guidance} | {signal.research_basis}");
     }
     return "\n".join(parts);
 }
@@ -91,9 +91,14 @@ def visual_signals(visual_snapshots: list[VisualSnapshot], interaction_steps: li
                 severity="high" if shot.psychology_score < 55 else "medium",
                 confidence=0.72,
                 page_url=shot.page_url,
+                issue_location=f"Screenshot state '{shot.action_label}' on {shot.page_url}",
+                evidence_ref=f"Screenshot: {shot.action_label} ({shot.screenshot_path})",
                 evidence=f"Screenshot '{shot.action_label}' ranked {shot.psychology_rank} ({shot.psychology_score}/100). {shot.visual_notes}",
-                research_basis="Gestalt grouping, processing fluency, Hick's Law, Fogg Behavior Model",
+                proof=f"The screenshot score is {shot.psychology_score}/100 with {shot.clickable_count} visible clickable elements and notes: {shot.visual_notes}",
+                why_it_matters="Users decide where to act from the visible screen. When hierarchy is weak or choice density is high, the next useful action is harder to perceive, so fewer people finish a satisfying session they would want to repeat.",
+                research_basis="Gestalt grouping and processing fluency explain why clear grouping and visual hierarchy reduce cognitive effort; Hick's Law applies when competing choices slow decisions.",
                 recommendation="Improve visual hierarchy so the next useful action, feedback, and sense of progress are easier to perceive in the screenshot.",
+                fix_guidance="Use the screenshot as the target state: make one primary action dominant, group related controls, reduce competing secondary actions, and add visible progress or feedback near the action.",
                 exact_ui_or_copy_tip="Use one dominant next action, stronger heading contrast, clearer spacing groups, and reduce competing visual weight around secondary actions.",
                 experiment_hypothesis="If the interface reduces choice clutter and makes progress easier to see, more users will complete a useful session and remember how to return.",
                 primary_metric="completed core actions",
@@ -111,9 +116,14 @@ def visual_signals(visual_snapshots: list[VisualSnapshot], interaction_steps: li
                 severity="high" if step.friction_score > 55 else "medium",
                 confidence=0.7,
                 page_url=step.to_url,
+                issue_location=f"Clicked component '{step.element_label}' from {step.from_url}",
+                evidence_ref=f"Click step {step.step_order}: {step.element_label} ({step.screenshot_path})",
                 evidence=f"Agent clicked '{step.element_label}' and captured result '{step.result}' with friction {step.friction_score}/100. {step.visual_notes}",
-                research_basis="Fogg Ability, HEART task success, cognitive load, Fitts's Law",
+                proof=f"The safe browser click produced '{step.result}', friction {step.friction_score}/100, and post-click notes: {step.visual_notes}",
+                why_it_matters="After a click, users need immediate confirmation of what changed and what to do next. If feedback is unclear, the loop breaks before a useful reward or progress signal appears.",
+                research_basis="Fogg Ability and HEART task success apply because unclear feedback raises effort; Fitts's Law applies when the next target is hard to find or act on.",
                 recommendation="Reduce post-click uncertainty and make state changes, navigation, and next actions immediately legible.",
+                fix_guidance="Treat the post-click screenshot as the failing state: add a clear state title, selected/active state, success feedback, or next-step CTA in the same visual group as the clicked component.",
                 exact_ui_or_copy_tip="After interaction, show a clear page/state title, selected state, progress cue, or next-step CTA within the same visual group.",
                 experiment_hypothesis="If each interactive component gives clearer feedback and next-step affordances, task success and return intent will improve.",
                 primary_metric="task completion rate",
@@ -121,6 +131,31 @@ def visual_signals(visual_snapshots: list[VisualSnapshot], interaction_steps: li
                 estimated_effort="medium",
                 expected_impact="medium",
             ));
+        }
+    }
+    return signals;
+}
+
+def attach_visual_refs(signals: list[DeterministicSignal], visual_snapshots: list[VisualSnapshot]) -> list[DeterministicSignal] {
+    if len(visual_snapshots) == 0 {
+        return signals;
+    }
+    fallback: VisualSnapshot = visual_snapshots[0];
+    for signal in signals {
+        matched: VisualSnapshot = fallback;
+        for shot in visual_snapshots {
+            if shot.page_url == signal.page_url {
+                matched = shot;
+            }
+        }
+        if len(signal.evidence_ref) == 0 or signal.evidence_ref.startswith("Text snapshot") {
+            signal.evidence_ref = f"Screenshot: {matched.action_label} ({matched.screenshot_path})";
+        }
+        if len(signal.issue_location) == 0 or signal.issue_location == signal.category + " on " + signal.page_url {
+            signal.issue_location = f"{signal.category} visible in screenshot state '{matched.action_label}' on {matched.page_url}";
+        }
+        if len(signal.proof) == 0 or signal.proof == signal.evidence {
+            signal.proof = signal.evidence + f" Screenshot '{matched.action_label}' provides the visual state for this claim; visual score {matched.psychology_score}/100 with {matched.clickable_count} clickable elements.";
         }
     }
     return signals;
@@ -164,9 +199,14 @@ def legalize_draft(draft: LlmFindingDraft) -> LlmFindingDraft {
         severity=draft.severity,
         confidence=draft.confidence,
         page_url=draft.page_url,
+        issue_location=draft.issue_location,
+        evidence_ref=draft.evidence_ref,
         evidence=draft.evidence,
+        proof=draft.proof,
+        why_it_matters=draft.why_it_matters,
         research_basis=draft.research_basis + "; hard legal dark-pattern filter",
         recommendation="Use the same retention intent only with truthful, user-controlled cues, progress, feedback, consent, and easy exits.",
+        fix_guidance="Keep the same product goal, but prove value with real user benefit and give the user control over reminders, visibility, and exits.",
         exact_ui_or_copy_tip="Replace pressure copy with clear value and control. Example: 'Resume your saved task' plus 'pause reminders' instead of threat-based streak loss.",
         experiment_hypothesis="If the product replaces manipulative pressure with truthful feedback and user control, repeat use can improve without increasing complaints.",
         primary_metric=draft.primary_metric,
@@ -184,9 +224,14 @@ def draft_for_lane(draft: LlmFindingDraft, lane: str) -> LlmFindingDraft {
         severity=draft.severity,
         confidence=draft.confidence,
         page_url=draft.page_url,
+        issue_location=draft.issue_location,
+        evidence_ref=draft.evidence_ref,
         evidence=draft.evidence,
+        proof=draft.proof,
+        why_it_matters=draft.why_it_matters,
         research_basis=draft.research_basis,
         recommendation=draft.recommendation,
+        fix_guidance=draft.fix_guidance,
         exact_ui_or_copy_tip=draft.exact_ui_or_copy_tip,
         experiment_hypothesis=draft.experiment_hypothesis,
         primary_metric=draft.primary_metric,
@@ -216,9 +261,14 @@ def draft_from_signal(signal: DeterministicSignal) -> LlmFindingDraft {
         severity=signal.severity,
         confidence=signal.confidence,
         page_url=signal.page_url,
+        issue_location=signal.issue_location,
+        evidence_ref=signal.evidence_ref,
         evidence=signal.evidence,
+        proof=signal.proof,
+        why_it_matters=signal.why_it_matters,
         research_basis=signal.research_basis,
         recommendation=signal.recommendation,
+        fix_guidance=signal.fix_guidance,
         exact_ui_or_copy_tip=signal.exact_ui_or_copy_tip,
         experiment_hypothesis=signal.experiment_hypothesis,
         primary_metric=signal.primary_metric,
@@ -253,9 +303,14 @@ def fallback_bundle(lane: str, signals: list[DeterministicSignal], score: int) -
             severity="medium",
             confidence=0.55,
             page_url="",
+            issue_location="Text snapshot only; visual evidence was limited.",
+            evidence_ref="Text snapshot only",
             evidence="The deterministic crawler captured limited evidence for this lane.",
-            research_basis="Fogg Behavior Model, HEART, habit formation, Self-Determination Theory",
+            proof="The crawler did not capture enough page, screenshot, or click evidence to make a stronger claim.",
+            why_it_matters="Weak evidence should produce cautious recommendations so teams do not chase irrelevant engagement techniques.",
+            research_basis="Fogg and HEART are used only as broad task-completion lenses here because the evidence is limited.",
             recommendation="Instrument the full funnel and add one clear, measurable product improvement tied to this lane.",
+            fix_guidance="Add event tracking and rerun the audit after the app exposes the key user journey and screenshot states.",
             exact_ui_or_copy_tip="Add a short next-step module that names the action, outcome, and risk reducer.",
             experiment_hypothesis="If the next step is made clearer and measured, the team will identify the highest-leverage improvement in the next launch cycle.",
             primary_metric=lane + " score",
@@ -289,6 +344,11 @@ def ensure_rubric(root_node: Root) -> RubricVersion {
 
 def create_engagement_finding(audit: AuditRun, draft: LlmFindingDraft) -> EngagementFinding {
     safe_draft: LlmFindingDraft = legalize_draft(draft);
+    issue_location: str = safe_draft.issue_location if len(safe_draft.issue_location) > 0 else safe_draft.page_url;
+    evidence_ref: str = safe_draft.evidence_ref if len(safe_draft.evidence_ref) > 0 else "Text snapshot: " + safe_draft.page_url;
+    proof: str = safe_draft.proof if len(safe_draft.proof) > 0 else safe_draft.evidence;
+    why_it_matters: str = safe_draft.why_it_matters if len(safe_draft.why_it_matters) > 0 else "This issue can reduce repeat use because users need a clear, trustworthy path from action to useful feedback.";
+    fix_guidance: str = safe_draft.fix_guidance if len(safe_draft.fix_guidance) > 0 else safe_draft.recommendation + " " + safe_draft.exact_ui_or_copy_tip;
     created = audit ++> EngagementFinding(
         audit_id=audit.uid,
         category=safe_draft.category,
@@ -296,9 +356,14 @@ def create_engagement_finding(audit: AuditRun, draft: LlmFindingDraft) -> Engage
         severity=safe_draft.severity,
         confidence=safe_draft.confidence,
         page_url=safe_draft.page_url,
+        issue_location=issue_location,
+        evidence_ref=evidence_ref,
         evidence=safe_draft.evidence,
+        proof=proof,
+        why_it_matters=why_it_matters,
         research_basis=safe_draft.research_basis,
         recommendation=safe_draft.recommendation,
+        fix_guidance=fix_guidance,
         exact_ui_or_copy_tip=safe_draft.exact_ui_or_copy_tip,
         experiment_hypothesis=safe_draft.experiment_hypothesis,
         primary_metric=safe_draft.primary_metric,
@@ -421,7 +486,7 @@ def:priv start_audit(project_id: str, url: str = "") -> AuditMutationResult {
         stored_interaction.uid = jid(stored_interaction); # type: ignore
     }
 
-    signals: list[DeterministicSignal] = deterministic_audit(crawl.snapshots, crawl.flow_steps) + visual_signals(visual.screenshots, visual.interactions);
+    signals: list[DeterministicSignal] = attach_visual_refs(deterministic_audit(crawl.snapshots, crawl.flow_steps) + visual_signals(visual.screenshots, visual.interactions), visual.screenshots);
     evidence_pack: str = build_evidence_pack(crawl.snapshots, visual.screenshots, visual.interactions, signals);
     deterministic_retention_score: int = score_lane(signals, "retention");
     retention_bundle: LlmAuditBundle = safe_retention_bundle(safety.final_url, evidence_pack, signals, deterministic_retention_score);
@@ -576,7 +641,13 @@ def:priv export_report(audit_id: str) -> ExportReport {
                 lines.append("");
                 lines.append("## Retention Findings");
                 for item in engagement {
-                    lines.append(f"- [{item.severity}] {item.category}: {item.recommendation} Evidence: {item.evidence} Tip: {item.exact_ui_or_copy_tip}");
+                    lines.append(f"- [{item.severity}] {item.category}: {item.recommendation}");
+                    lines.append(f"  - Where: {item.issue_location}");
+                    lines.append(f"  - Evidence ref: {item.evidence_ref}");
+                    lines.append(f"  - Issue proof: {item.proof}");
+                    lines.append(f"  - Why it matters: {item.why_it_matters}");
+                    lines.append(f"  - Fix: {item.fix_guidance}");
+                    lines.append(f"  - Exact tip: {item.exact_ui_or_copy_tip}");
                 }
                 lines.append("## Experiment Backlog");
                 for idea in experiments {
