@@ -1,7 +1,7 @@
 import from byllm.lib { Model }
 import from services.models { DeterministicSignal, LlmAuditBundle }
 
-glob llm: Model = Model(model_name="gpt-4o-mini");
+glob llm: Model = Model(model_name="gpt-5.5");
 
 def evaluate_retention_recommendations(
     target_url: str,
