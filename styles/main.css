@@ -223,6 +223,58 @@ a:hover {
     line-height: 1.4;
 }
 
+.rubric-score-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.rubric-score-grid div {
+    min-height: 84px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel-2);
+}
+
+.rubric-score-grid span,
+.rubric-score-grid strong {
+    display: block;
+}
+
+.rubric-score-grid span {
+    color: var(--muted);
+    font-size: 0.84rem;
+}
+
+.rubric-score-grid strong {
+    margin-top: 8px;
+    color: var(--teal);
+    font-size: 1.22rem;
+}
+
+.rubric-lists {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 18px;
+}
+
+.rubric-lists h3 {
+    margin: 0 0 8px;
+    font-size: 0.94rem;
+}
+
+.rubric-lists ul {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--muted);
+}
+
+.rubric-lists li + li {
+    margin-top: 6px;
+}
+
 .helper-text {
     margin: 6px 0 0;
     color: var(--muted);
@@ -634,6 +686,8 @@ a:hover {
     .two-column,
     .score-grid,
     .loop-strip,
+    .rubric-score-grid,
+    .rubric-lists,
     .visual-grid,
     .finding-grid {
         grid-template-columns: 1fr;

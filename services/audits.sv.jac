@@ -32,6 +32,16 @@ def bounded_score(score: int) -> int {
     return score;
 }
 
+def bounded_ten(score: int) -> int {
+    if score < 0 {
+        return 0;
+    }
+    if score > 10 {
+        return 10;
+    }
+    return score;
+}
+
 def blended_score(llm_score: int, deterministic_score: int) -> int {
     return bounded_score((bounded_score(llm_score) + bounded_score(deterministic_score)) // 2);
 }
@@ -134,6 +144,22 @@ def visual_signals(visual_snapshots: list[VisualSnapshot], interaction_steps: li
         }
     }
     return signals;
+}
+
+def rubric_overall(bundle: LlmAuditBundle) -> int {
+    weighted: float = (
+        float(bounded_ten(bundle.onboarding_activation)) * 1.0
+        + float(bounded_ten(bundle.habit_loop_strength)) * 1.2
+        + float(bounded_ten(bundle.reward_design_feedback)) * 1.1
+        + float(bounded_ten(bundle.social_retention_mechanics)) * 1.0
+        + float(bounded_ten(bundle.attention_capture_session_depth)) * 1.1
+        + float(bounded_ten(bundle.personalization_adaptation)) * 1.2
+        + float(bounded_ten(bundle.friction_reduction)) * 1.1
+        + float(bounded_ten(bundle.progression_investment)) * 1.2
+        + float(bounded_ten(bundle.reentry_notification_systems)) * 1.0
+        + float(bounded_ten(bundle.trust_emotional_safety)) * 0.9
+    );
+    return bounded_score(int((weighted / 10.8) * 10.0));
 }
 
 def attach_visual_refs(signals: list[DeterministicSignal], visual_snapshots: list[VisualSnapshot]) -> list[DeterministicSignal] {
@@ -320,7 +346,33 @@ def fallback_bundle(lane: str, signals: list[DeterministicSignal], score: int) -
             legal_safe=True,
         ));
     }
-    return LlmAuditBundle(score=score, findings=findings, experiments=experiments);
+    category_score: int = 5;
+    if score < 40 {
+        category_score = 3;
+    } elif score > 75 {
+        category_score = 7;
+    }
+    return LlmAuditBundle(
+        score=score,
+        onboarding_activation=category_score,
+        habit_loop_strength=category_score,
+        reward_design_feedback=category_score,
+        social_retention_mechanics=category_score,
+        attention_capture_session_depth=category_score,
+        personalization_adaptation=category_score,
+        friction_reduction=category_score,
+        progression_investment=category_score,
+        reentry_notification_systems=category_score,
+        trust_emotional_safety=category_score,
+        strengths=[],
+        weaknesses=["LLM rubric evaluation was unavailable, so this fallback uses deterministic crawler signals only."],
+        retention_risks=["Missing or limited observable evidence can hide retention weaknesses."],
+        highest_leverage_improvements=["Review screenshot and click evidence, then address the highest-severity findings first."],
+        dark_pattern_risk_score=0,
+        dark_pattern_risk_reasons=[],
+        findings=findings,
+        experiments=experiments,
+    );
 }
 
 def safe_retention_bundle(target_url: str, evidence_pack: str, signals: list[DeterministicSignal], score: int) -> LlmAuditBundle {
@@ -449,7 +501,7 @@ def:priv start_audit(project_id: str, url: str = "") -> AuditMutationResult {
         target_url=safety.final_url,
         status="running",
         started_at=now_iso(),
-        rubric_version="2026.05.engagement-auditor",
+        rubric_version="B2C Web App Retention & Engagement Evaluation Rubric v1.0",
     );
     audit: AuditRun = created[0];
     audit.uid = jid(audit); # type: ignore
@@ -505,9 +557,25 @@ def:priv start_audit(project_id: str, url: str = "") -> AuditMutationResult {
         create_experiment(audit, experiment_for_lane(experiment, "retention"));
     }
 
-    audit.retention_score = blended_score(retention_bundle.score, deterministic_retention_score); # type: ignore
+    audit.retention_score = blended_score(rubric_overall(retention_bundle), deterministic_retention_score); # type: ignore
     audit.visual_score = visual.visual_score; # type: ignore
     audit.interaction_score = visual.interaction_score; # type: ignore
+    audit.onboarding_activation_score = bounded_ten(retention_bundle.onboarding_activation); # type: ignore
+    audit.habit_loop_strength_score = bounded_ten(retention_bundle.habit_loop_strength); # type: ignore
+    audit.reward_design_feedback_score = bounded_ten(retention_bundle.reward_design_feedback); # type: ignore
+    audit.social_retention_mechanics_score = bounded_ten(retention_bundle.social_retention_mechanics); # type: ignore
+    audit.attention_capture_session_depth_score = bounded_ten(retention_bundle.attention_capture_session_depth); # type: ignore
+    audit.personalization_adaptation_score = bounded_ten(retention_bundle.personalization_adaptation); # type: ignore
+    audit.friction_reduction_score = bounded_ten(retention_bundle.friction_reduction); # type: ignore
+    audit.progression_investment_score = bounded_ten(retention_bundle.progression_investment); # type: ignore
+    audit.reentry_notification_systems_score = bounded_ten(retention_bundle.reentry_notification_systems); # type: ignore
+    audit.trust_emotional_safety_score = bounded_ten(retention_bundle.trust_emotional_safety); # type: ignore
+    audit.rubric_strengths = retention_bundle.strengths; # type: ignore
+    audit.rubric_weaknesses = retention_bundle.weaknesses; # type: ignore
+    audit.rubric_retention_risks = retention_bundle.retention_risks; # type: ignore
+    audit.rubric_highest_leverage_improvements = retention_bundle.highest_leverage_improvements; # type: ignore
+    audit.dark_pattern_risk_score = bounded_ten(retention_bundle.dark_pattern_risk_score); # type: ignore
+    audit.dark_pattern_risk_reasons = retention_bundle.dark_pattern_risk_reasons; # type: ignore
     audit.crawl_summary = crawl.summary; # type: ignore
     audit.visual_summary = visual.summary if visual.ok else visual.blocked_reason; # type: ignore
     audit.legal_filter_summary = f"Legal filter applied. {legal_rewrites} recommendation(s) rewritten into truthful, user-controlled alternatives."; # type: ignore
@@ -622,6 +690,44 @@ def:priv export_report(audit_id: str) -> ExportReport {
                     f"Retention score: {audit.retention_score}/100",
                     f"Visual psychology score: {audit.visual_score}/100",
                     f"Interaction score: {audit.interaction_score}/100",
+                    f"Rubric: {audit.rubric_version}",
+                    "",
+                    "## Rubric Category Scores",
+                    f"- Onboarding activation: {audit.onboarding_activation_score}/10",
+                    f"- Habit loop strength: {audit.habit_loop_strength_score}/10",
+                    f"- Reward design feedback: {audit.reward_design_feedback_score}/10",
+                    f"- Social retention mechanics: {audit.social_retention_mechanics_score}/10",
+                    f"- Attention capture/session depth: {audit.attention_capture_session_depth_score}/10",
+                    f"- Personalization/adaptation: {audit.personalization_adaptation_score}/10",
+                    f"- Friction reduction: {audit.friction_reduction_score}/10",
+                    f"- Progression/investment: {audit.progression_investment_score}/10",
+                    f"- Re-entry/notification systems: {audit.reentry_notification_systems_score}/10",
+                    f"- Trust/emotional safety: {audit.trust_emotional_safety_score}/10",
+                    f"- Dark pattern risk: {audit.dark_pattern_risk_score}/10",
+                    "",
+                    "## Rubric Interpretation",
+                    "Strengths:",
+                ];
+                for strength in audit.rubric_strengths {
+                    lines.append(f"- {strength}");
+                }
+                lines.append("Weaknesses:");
+                for weakness in audit.rubric_weaknesses {
+                    lines.append(f"- {weakness}");
+                }
+                lines.append("Retention risks:");
+                for risk in audit.rubric_retention_risks {
+                    lines.append(f"- {risk}");
+                }
+                lines.append("Highest-leverage improvements:");
+                for improvement in audit.rubric_highest_leverage_improvements {
+                    lines.append(f"- {improvement}");
+                }
+                lines.append("Dark-pattern risk reasons:");
+                for reason in audit.dark_pattern_risk_reasons {
+                    lines.append(f"- {reason}");
+                }
+                lines += [
                     "",
                     "## Crawl Safety",
                     audit.crawl_summary,

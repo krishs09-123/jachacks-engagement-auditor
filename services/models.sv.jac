@@ -17,11 +17,27 @@ node AuditRun {
     has retention_score: int = 0;
     has visual_score: int = 0;
     has interaction_score: int = 0;
+    has onboarding_activation_score: int = 0;
+    has habit_loop_strength_score: int = 0;
+    has reward_design_feedback_score: int = 0;
+    has social_retention_mechanics_score: int = 0;
+    has attention_capture_session_depth_score: int = 0;
+    has personalization_adaptation_score: int = 0;
+    has friction_reduction_score: int = 0;
+    has progression_investment_score: int = 0;
+    has reentry_notification_systems_score: int = 0;
+    has trust_emotional_safety_score: int = 0;
+    has rubric_strengths: list[str] = [];
+    has rubric_weaknesses: list[str] = [];
+    has rubric_retention_risks: list[str] = [];
+    has rubric_highest_leverage_improvements: list[str] = [];
+    has dark_pattern_risk_score: int = 0;
+    has dark_pattern_risk_reasons: list[str] = [];
     has crawl_summary: str = "";
     has visual_summary: str = "";
     has legal_filter_summary: str = "";
     has error_message: str = "";
-    has rubric_version: str = "2026.05.engagement-auditor";
+    has rubric_version: str = "B2C Web App Retention & Engagement Evaluation Rubric v1.0";
 }
 
 node PageSnapshot {
@@ -137,7 +153,7 @@ node ExperimentIdea {
 
 node RubricVersion {
     has uid: str = "";
-    has version: str = "2026.05.engagement-auditor";
+    has version: str = "B2C Web App Retention & Engagement Evaluation Rubric v1.0";
     has frameworks: list[str] = [
         "Fogg Behavior Model",
         "HEART",
@@ -338,11 +354,43 @@ sem LlmFindingDraft.legal_safe = "True only when the recommendation avoids fake 
 
 obj LlmAuditBundle {
     has score: int = 60;
+    has onboarding_activation: int = 5;
+    has habit_loop_strength: int = 5;
+    has reward_design_feedback: int = 5;
+    has social_retention_mechanics: int = 5;
+    has attention_capture_session_depth: int = 5;
+    has personalization_adaptation: int = 5;
+    has friction_reduction: int = 5;
+    has progression_investment: int = 5;
+    has reentry_notification_systems: int = 5;
+    has trust_emotional_safety: int = 5;
+    has strengths: list[str] = [];
+    has weaknesses: list[str] = [];
+    has retention_risks: list[str] = [];
+    has highest_leverage_improvements: list[str] = [];
+    has dark_pattern_risk_score: int = 0;
+    has dark_pattern_risk_reasons: list[str] = [];
     has findings: list[LlmFindingDraft] = [];
     has experiments: list[ExperimentIdeaDraft] = [];
 }
 
-sem LlmAuditBundle = "A retention-only audit result with a 0-100 score, concrete findings, and legal experiment ideas.";
-sem LlmAuditBundle.score = "0-100 retention loop score; low means urgent cue/action/reward/learning-loop or attention-safety work is needed.";
+sem LlmAuditBundle = "A retention-only audit result following the B2C Web App Retention & Engagement Evaluation Rubric v1.0.";
+sem LlmAuditBundle.score = "0-100 overall retention score from the weighted rubric, using only observable product evidence.";
+sem LlmAuditBundle.onboarding_activation = "0-10 category score for clarity of value, speed to first value, signup friction, cognitive load, guided activation, empty states, and progressive disclosure.";
+sem LlmAuditBundle.habit_loop_strength = "0-10 category score for cue-action-reward loops, recurring triggers, unfinished tasks, streaks, persistence, routines, and repeat workflow incentives.";
+sem LlmAuditBundle.reward_design_feedback = "0-10 category score for feedback responsiveness, emotional payoff, progress visibility, achievement systems, micro-rewards, variability, and delight.";
+sem LlmAuditBundle.social_retention_mechanics = "0-10 category score for sharing, identity, community, competition, collaboration, network effects, and social accountability.";
+sem LlmAuditBundle.attention_capture_session_depth = "0-10 category score for content flow, session continuation, recommendations, autoplay/infinite scroll when present, information scent, and content density.";
+sem LlmAuditBundle.personalization_adaptation = "0-10 category score for visible adaptation, remembered preferences, adaptive onboarding, user-specific optimization, and context awareness.";
+sem LlmAuditBundle.friction_reduction = "0-10 category score for navigation simplicity, interaction cost, form minimization, persistence, loading performance, and click efficiency.";
+sem LlmAuditBundle.progression_investment = "0-10 category score for long-term accumulation, saved progress, identity investment, collections, achievements, customization, and ownership psychology.";
+sem LlmAuditBundle.reentry_notification_systems = "0-10 category score for observable reactivation, notifications, email retention, unfinished-task reminders, personalized nudges, and lifecycle messaging.";
+sem LlmAuditBundle.trust_emotional_safety = "0-10 category score for trust, permission transparency, predictability, emotional tone, ethical UX, privacy clarity, and user control.";
+sem LlmAuditBundle.strengths = "Short observed strengths, each grounded in screenshot, text, or click evidence.";
+sem LlmAuditBundle.weaknesses = "Short observed weaknesses or missing observable systems, each grounded in evidence or explicitly marked as missing evidence.";
+sem LlmAuditBundle.retention_risks = "Retention risks from the rubric, avoiding speculation beyond observable evidence.";
+sem LlmAuditBundle.highest_leverage_improvements = "Highest-leverage improvements based on the rubric and captured evidence.";
+sem LlmAuditBundle.dark_pattern_risk_score = "0-10 dark pattern risk score where 0-2 is minimal and 9-10 is highly exploitative.";
+sem LlmAuditBundle.dark_pattern_risk_reasons = "Observed reasons for the dark-pattern risk score. Use an empty list or minimal reasons when risk is low.";
 sem LlmAuditBundle.findings = "Concrete, evidence-backed retention and behavioral-loop findings.";
 sem LlmAuditBundle.experiments = "Prioritized experiment ideas that remain legal and truthful.";

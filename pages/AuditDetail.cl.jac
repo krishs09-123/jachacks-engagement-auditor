@@ -30,6 +30,17 @@ def:pub AuditDetailPage() -> JsxElement {
     retention_score: int = 0;
     visual_score: int = 0;
     interaction_score: int = 0;
+    onboarding_activation_score: int = 0;
+    habit_loop_strength_score: int = 0;
+    reward_design_feedback_score: int = 0;
+    social_retention_mechanics_score: int = 0;
+    attention_capture_session_depth_score: int = 0;
+    personalization_adaptation_score: int = 0;
+    friction_reduction_score: int = 0;
+    progression_investment_score: int = 0;
+    reentry_notification_systems_score: int = 0;
+    trust_emotional_safety_score: int = 0;
+    dark_pattern_risk_score: int = 0;
     run_status: str = "";
     completed_at: str = "";
     crawl_summary: str = "";
@@ -43,6 +54,11 @@ def:pub AuditDetailPage() -> JsxElement {
     snapshots: list[PageSnapshot] = [];
     visual_snapshots: list[VisualSnapshot] = [];
     interaction_steps: list[InteractionStep] = [];
+    rubric_strengths: list[str] = [];
+    rubric_weaknesses: list[str] = [];
+    rubric_risks: list[str] = [];
+    rubric_improvements: list[str] = [];
+    dark_pattern_risk_reasons: list[str] = [];
     if view is not None and view.project is not None {
         project_name = view.project.name;
     }
@@ -52,6 +68,22 @@ def:pub AuditDetailPage() -> JsxElement {
         retention_score = view.run.retention_score;
         visual_score = view.run.visual_score;
         interaction_score = view.run.interaction_score;
+        onboarding_activation_score = view.run.onboarding_activation_score;
+        habit_loop_strength_score = view.run.habit_loop_strength_score;
+        reward_design_feedback_score = view.run.reward_design_feedback_score;
+        social_retention_mechanics_score = view.run.social_retention_mechanics_score;
+        attention_capture_session_depth_score = view.run.attention_capture_session_depth_score;
+        personalization_adaptation_score = view.run.personalization_adaptation_score;
+        friction_reduction_score = view.run.friction_reduction_score;
+        progression_investment_score = view.run.progression_investment_score;
+        reentry_notification_systems_score = view.run.reentry_notification_systems_score;
+        trust_emotional_safety_score = view.run.trust_emotional_safety_score;
+        dark_pattern_risk_score = view.run.dark_pattern_risk_score;
+        rubric_strengths = view.run.rubric_strengths;
+        rubric_weaknesses = view.run.rubric_weaknesses;
+        rubric_risks = view.run.rubric_retention_risks;
+        rubric_improvements = view.run.rubric_highest_leverage_improvements;
+        dark_pattern_risk_reasons = view.run.dark_pattern_risk_reasons;
         run_status = view.run.status;
         completed_at = view.run.completed_at;
         crawl_summary = view.run.crawl_summary;
@@ -160,6 +192,55 @@ def:pub AuditDetailPage() -> JsxElement {
                     <div><strong>3. Reward</strong><span>Novelty, progress, feedback, status, or social validation.</span></div>
                     <div><strong>4. Learning</strong><span>The app learns what keeps the user engaged.</span></div>
                     <div><strong>5. Optimization</strong><span>Future cues and content adapt over time.</span></div>
+                </div>
+            </CardContent>
+        </Card>}
+
+        {has_run and <Card>
+            <CardHeader>
+                <CardTitle>B2C retention rubric</CardTitle>
+                <CardDescription>Observable retention architecture scored separately from aesthetics.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="rubric-score-grid">
+                    <div><span>Onboarding activation</span><strong>{str(onboarding_activation_score) + "/10"}</strong></div>
+                    <div><span>Habit loop strength</span><strong>{str(habit_loop_strength_score) + "/10"}</strong></div>
+                    <div><span>Reward feedback</span><strong>{str(reward_design_feedback_score) + "/10"}</strong></div>
+                    <div><span>Social retention</span><strong>{str(social_retention_mechanics_score) + "/10"}</strong></div>
+                    <div><span>Session depth</span><strong>{str(attention_capture_session_depth_score) + "/10"}</strong></div>
+                    <div><span>Personalization</span><strong>{str(personalization_adaptation_score) + "/10"}</strong></div>
+                    <div><span>Friction reduction</span><strong>{str(friction_reduction_score) + "/10"}</strong></div>
+                    <div><span>Progression investment</span><strong>{str(progression_investment_score) + "/10"}</strong></div>
+                    <div><span>Re-entry systems</span><strong>{str(reentry_notification_systems_score) + "/10"}</strong></div>
+                    <div><span>Trust and safety</span><strong>{str(trust_emotional_safety_score) + "/10"}</strong></div>
+                    <div><span>Dark-pattern risk</span><strong>{str(dark_pattern_risk_score) + "/10"}</strong></div>
+                </div>
+                <div className="rubric-lists">
+                    <div>
+                        <h3>Strengths</h3>
+                        {len(rubric_strengths) == 0 and <p className="empty-state">No specific strengths recorded.</p>}
+                        {len(rubric_strengths) > 0 and <ul>{[<li key={str(i)}>{rubric_strengths[i]}</li> for i in range(len(rubric_strengths))]}</ul>}
+                    </div>
+                    <div>
+                        <h3>Weaknesses</h3>
+                        {len(rubric_weaknesses) == 0 and <p className="empty-state">No specific weaknesses recorded.</p>}
+                        {len(rubric_weaknesses) > 0 and <ul>{[<li key={str(i)}>{rubric_weaknesses[i]}</li> for i in range(len(rubric_weaknesses))]}</ul>}
+                    </div>
+                    <div>
+                        <h3>Retention risks</h3>
+                        {len(rubric_risks) == 0 and <p className="empty-state">No specific risks recorded.</p>}
+                        {len(rubric_risks) > 0 and <ul>{[<li key={str(i)}>{rubric_risks[i]}</li> for i in range(len(rubric_risks))]}</ul>}
+                    </div>
+                    <div>
+                        <h3>Highest leverage</h3>
+                        {len(rubric_improvements) == 0 and <p className="empty-state">No specific improvements recorded.</p>}
+                        {len(rubric_improvements) > 0 and <ul>{[<li key={str(i)}>{rubric_improvements[i]}</li> for i in range(len(rubric_improvements))]}</ul>}
+                    </div>
+                    <div>
+                        <h3>Dark-pattern reasons</h3>
+                        {len(dark_pattern_risk_reasons) == 0 and <p className="empty-state">No material dark-pattern risk observed.</p>}
+                        {len(dark_pattern_risk_reasons) > 0 and <ul>{[<li key={str(i)}>{dark_pattern_risk_reasons[i]}</li> for i in range(len(dark_pattern_risk_reasons))]}</ul>}
+                    </div>
                 </div>
             </CardContent>
         </Card>}

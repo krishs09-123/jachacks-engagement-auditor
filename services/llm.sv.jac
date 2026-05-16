@@ -7,10 +7,24 @@ def evaluate_retention_recommendations(
     target_url: str,
     evidence_pack: str,
     deterministic_signals: list[DeterministicSignal],
-) -> LlmAuditBundle by llm(max_tokens=2400, temperature=0.2);
+) -> LlmAuditBundle by llm(max_tokens=3600, temperature=0.2);
 
 sem evaluate_retention_recommendations = """
 Evaluate a consumer app for broad retention and behavioral reinforcement loops.
+After crawler input gathering, apply the "B2C Web App Retention & Engagement Evaluation Rubric v1.0" to the observable evidence. Return category scores as integers from 0-10 and an overall 0-100 score.
+Rubric categories and weights:
+- onboarding_activation (1.0): value clarity, speed to first value, signup friction, cognitive load, guided activation, empty states, progressive disclosure.
+- habit_loop_strength (1.2): cue-action-reward loops, recurring triggers, unfinished task systems, streaks, persistent state, routines, repeat workflow incentives.
+- reward_design_feedback (1.1): feedback responsiveness, emotional payoff, progress visibility, achievements, micro-rewards, reward variability, delight.
+- social_retention_mechanics (1.0): sharing, identity, community, competition, collaboration, network effects, social accountability.
+- attention_capture_session_depth (1.1): content flow, session continuation, recommendation mechanics, autoplay/infinite scroll only when present, curiosity gaps, content density.
+- personalization_adaptation (1.2): visible behavior adaptation, remembered preferences, adaptive onboarding, user-specific optimization, context awareness.
+- friction_reduction (1.1): navigation simplicity, interaction cost, form minimization, session persistence, loading performance, click efficiency.
+- progression_investment (1.2): accumulation, saved progress, identity investment, collections, achievements, customization, ownership psychology.
+- reentry_notification_systems (1.0): observable reactivation, notifications, email retention, unfinished-task reminders, personalized nudges, lifecycle messaging.
+- trust_emotional_safety (0.9): trust, permission transparency, predictability, emotional tone, ethical UX, privacy clarity, user control.
+Scoring scale: 0-2 missing/broken/harmful, 3-4 weak, 5-6 functional but average, 7-8 strong, 9-10 elite. Penalize missing observable evidence in the relevant category, but do not invent backend sophistication or claim a system exists unless the screenshots, text, or click evidence show it.
+Dark pattern risk is separate: 0-2 minimal, 3-4 minor, 5-6 moderate, 7-8 aggressive steering, 9-10 exploitative. Consider fake urgency, forced continuity, hidden unsubscribe, manipulative defaults, deceptive button hierarchy, compulsive loops, excessive notifications, disguised ads, and obscured pricing only when observable.
 Use the closed loop only when it is actually applicable to the audited surface: cue -> action -> reward -> learning -> optimization. Explain this plainly through the user's visible experience, not as abstract theory.
 Use Skinner/intermittent reinforcement, Schultz reward prediction error, Kahneman and Tversky loss aversion, Lally habit formation, Przybylski FoMO, Stothart notification interruption, Sherman social likes, Gray/Mathur dark patterns, Yancey/Settles notification optimization, Lindstrom personalized reinforcement, Gestalt grouping, Hick's Law, Fitts's Law, and processing fluency only when the evidence supports that mechanism. Do not penalize a normal website for missing infinite scroll, streaks, social likes, notifications, or personalization unless those patterns or close product contexts appear in the evidence.
 Use both sanitized text evidence and screenshot/click-through evidence. Treat visual psychology ranks, screenshot notes, visible clickable density, and post-click feedback as first-class evidence.
