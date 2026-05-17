@@ -16,14 +16,14 @@ def:priv create_project(name: str, url: str) -> ProjectMutationResult {
         created_at=now_iso(),
     );
     project: Project = created[0];
-    project.uid = jid(project); # type: ignore
+    project.uid = jid(project); # jac:ignore[E1005]
     return ProjectMutationResult(ok=True, message="Project created.", project=project);
 }
 
 def:priv list_projects() -> list[Project] {
     projects: list[Project] = [];
     for project in [root -->][?:Project] {
-        project.uid = jid(project); # type: ignore
+        project.uid = jid(project); # jac:ignore[E1005]
         projects.append(project);
     }
     return projects;

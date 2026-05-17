@@ -346,19 +346,19 @@ def deterministic_audit(snapshots: list[PageSnapshot], flow_steps: list[FlowStep
 def severity_points(severity: str) -> int {
     lowered: str = severity.lower();
     if lowered == "critical" {
-        return 22;
+        return 12;
     }
     if lowered == "high" {
-        return 15;
+        return 6;
     }
     if lowered == "medium" {
-        return 9;
+        return 3;
     }
-    return 4;
+    return 1;
 }
 
 def score_lane(signals: list[DeterministicSignal], lane: str) -> int {
-    score: int = 100;
+    score: int = 75;
     for signal in signals {
         if signal.lane_retention_or_conversion == lane {
             score -= severity_points(signal.severity);

@@ -1,6 +1,24 @@
-sv import from ..services.models { EngagementFinding }
 import from .ui.Badge { Badge }
 import from .ui.Card { Card, CardContent }
+
+obj:pub FindingListItem {
+    has uid: str = "";
+    has severity: str = "medium";
+    has category: str = "";
+    has legal_safe: bool = True;
+    has recommendation: str = "";
+    has issue_location: str = "";
+    has evidence_ref: str = "";
+    has evidence: str = "";
+    has proof: str = "";
+    has why_it_matters: str = "";
+    has research_basis: str = "";
+    has fix_guidance: str = "";
+    has exact_ui_or_copy_tip: str = "";
+    has experiment_hypothesis: str = "";
+    has primary_metric: str = "";
+    has guardrail_metric: str = "";
+}
 
 def toneForSeverity(severity: str) -> str {
     lowered: str = severity.lower();
@@ -16,7 +34,7 @@ def toneForSeverity(severity: str) -> str {
     return "neutral";
 }
 
-def:pub FindingList(findings: list[EngagementFinding] = []) -> JsxElement {
+def:pub FindingList(findings: list[FindingListItem] = []) -> JsxElement {
     if len(findings) == 0 {
         return <p className="empty-state">No findings yet.</p>;
     }

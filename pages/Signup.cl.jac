@@ -19,7 +19,7 @@ def:pub SignupPage() -> JsxElement {
     async def handleSignup() -> None {
         loading = True;
         error = "";
-        signup_result: dict[str, Any] | None = None;
+        signup_result: dict | None = None;
         login_ok: bool = False;
         signup_result = await runtimeSignup(username, password);
         if signup_result {

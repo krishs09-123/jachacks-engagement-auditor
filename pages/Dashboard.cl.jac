@@ -1,6 +1,5 @@
 import from "@jac/runtime" { Link as RuntimeLink }
-sv import from ..services.projects { create_project, list_projects }
-sv import from ..services.models { Project, ProjectMutationResult }
+import from ..hooks.useProjects { useProjects }
 import from ..components.AppShell { AppShell }
 import from ..components.ui.Button { Button }
 import from ..components.ui.Card { Card, CardContent, CardDescription, CardHeader, CardTitle }
@@ -10,46 +9,29 @@ import from ..components.ui.Table { Table, TableBody, TableCell, TableHead, Tabl
 import from ..components.ui.Dialog { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle }
 import from ..components.ui.Alert { Alert }
 
+obj ProjectCreateResult {
+    has ok: bool = False;
+    has message: str = "";
+}
+
 def:pub DashboardPage() -> JsxElement {
     has showDialog: bool = False;
     has newName: str = "";
     has newUrl: str = "";
     has createMessage: str = "";
-    has projects: list[Project] = [];
-    has loading: bool = True;
-    has error: str = "";
-
-    async def refreshProjects() -> None {
-        loading = True;
-        error = "";
-        try {
-            loaded_projects: list[Project] = [];
-            loaded_projects = await list_projects();
-            projects = loaded_projects;
-        } except Exception as e {
-            error = "Could not load projects: " + str(e);
-        }
-        loading = False;
-    }
+    projectState = useProjects();
 
     async def handleCreate() -> None {
         createMessage = "";
-        response: ProjectMutationResult | None = None;
-        response = await create_project(newName, newUrl);
+        response: ProjectCreateResult | None = None;
+        response = await projectState.createProject(newName, newUrl); # jac:ignore[E1001]
         if response is not None and response.ok {
-            if response.project is not None {
-                projects = projects + [response.project];
-            }
             newName = "";
             newUrl = "";
             showDialog = False;
         } elif response is not None {
             createMessage = str(response.message);
         }
-    }
-
-    async can with entry {
-        await refreshProjects();
     }
 
     def handleOpenDialog() -> None {
@@ -78,7 +60,7 @@ def:pub DashboardPage() -> JsxElement {
             <Button onClick={handleOpenDialog}>New project</Button>
         </header>
 
-        {error != "" and <Alert tone="danger">{error}</Alert>}
+        {projectState.error != "" and <Alert tone="danger">{projectState.error}</Alert>}
 
         <Card>
             <CardHeader>
@@ -86,9 +68,9 @@ def:pub DashboardPage() -> JsxElement {
                 <CardDescription>Each project and audit is stored under your private Jac graph root.</CardDescription>
             </CardHeader>
             <CardContent>
-                {loading and <p className="empty-state">Loading projects...</p>}
-                {not loading and len(projects) == 0 and <p className="empty-state">No projects yet.</p>}
-                {not loading and len(projects) > 0 and <Table>
+                {projectState.loading and <p className="empty-state">Loading projects...</p>}
+                {not projectState.loading and len(projectState.projects) == 0 and <p className="empty-state">No projects yet.</p>}
+                {not projectState.loading and len(projectState.projects) > 0 and <Table>
                     <TableHead>
                         <TableRow>
                             <TableHeader>Name</TableHeader>
@@ -103,7 +85,7 @@ def:pub DashboardPage() -> JsxElement {
                             <TableCell><span className="mono-url">{project.live_url}</span></TableCell>
                             <TableCell><Badge tone={"success" if project.last_audit_id != "" else "neutral"}>{"audited" if project.last_audit_id != "" else "new"}</Badge></TableCell>
                             <TableCell><RuntimeLink className="table-link" to={"/projects/" + project.uid}>Open</RuntimeLink></TableCell>
-                        </TableRow> for project in projects]}
+                        </TableRow> for project in projectState.projects]}
                     </TableBody>
                 </Table>}
             </CardContent>

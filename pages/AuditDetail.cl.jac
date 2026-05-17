@@ -3,7 +3,6 @@ import from "@jac/runtime" {
     useNavigate as runtimeUseNavigate,
     useParams as runtimeUseParams,
 }
-sv import from ..services.audits { export_report }
 sv import from ..services.models { AuditRunView, ExportReport, PageSnapshot, VisualSnapshot, InteractionStep }
 import from ..hooks.useAuditRun { useAuditRun }
 import from ..components.AppShell { AppShell }
@@ -99,13 +98,15 @@ def:pub AuditDetailPage() -> JsxElement {
         interaction_count = len(view.interaction_steps);
         recommendations_count = len(view.recommendations);
     }
-    if exported is not None {
+    if auditState.exported is not None {
+        export_markdown = auditState.exported.markdown;
+    } elif exported is not None {
         export_markdown = exported.markdown;
     }
 
     async def handleExport() -> None {
         export_result: ExportReport | None = None;
-        export_result = await export_report(audit_id);
+        export_result = await auditState.exportReport(); # jac:ignore[E1001]
         exported = export_result;
         if export_result is not None and export_result.ok {
             showExport = True;

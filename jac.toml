@@ -9,10 +9,11 @@ base_route_app = "app"
 enabled = true
 
 [plugins.byllm.model]
-default_model = "gpt-4o-mini"
+default_model = "gpt-4o"
 
 [plugins.byllm.call_params]
 temperature = 0.2
+
 
 [dependencies]
 byllm = "*"

@@ -1,7 +1,7 @@
 import from "@jac/runtime" { Link as RuntimeLink, useParams as runtimeUseParams }
 import from ..hooks.useAuditRun { useAuditRun }
 import from ..components.AppShell { AppShell }
-import from ..components.FindingList { FindingList }
+import from ..components.FindingList { FindingList, FindingListItem }
 import from ..components.ui.Card { Card, CardContent, CardDescription, CardHeader, CardTitle }
 import from ..components.ui.Progress { Progress }
 import from ..components.ui.Alert { Alert }
@@ -13,6 +13,7 @@ def:pub RetentionReportPage() -> JsxElement {
     view = auditState.view;
     has_run: bool = False;
     retention_score: int = 0;
+    display_findings: list[FindingListItem] = auditState.engagementFindings; # jac:ignore[E1001]
     if view is not None and view.run is not None {
         has_run = True;
         retention_score = view.run.retention_score;
@@ -39,6 +40,6 @@ def:pub RetentionReportPage() -> JsxElement {
             </CardContent>
         </Card>}
 
-        <FindingList findings={auditState.engagementFindings} />
+        <FindingList findings={display_findings} />
     </AppShell>;
 }
