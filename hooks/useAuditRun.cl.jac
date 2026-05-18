@@ -2,21 +2,18 @@ sv import from ..services.audits {
     start_audit,
     get_audit_run,
     list_engagement_findings,
-    list_experiment_ideas,
     export_report,
 }
 sv import from ..services.models {
     AuditMutationResult,
     AuditRunView,
     EngagementFinding,
-    ExperimentIdea,
     ExportReport,
 }
 
 obj AuditRunState {
     has view: AuditRunView | None = None;
     has engagementFindings: list[EngagementFinding] = [];
-    has experimentIdeas: list[ExperimentIdea] = [];
     has loading: bool = False;
     has error: str = "";
     has exported: ExportReport | None = None;
@@ -33,7 +30,6 @@ obj StartAuditState {
 def:pub useAuditRun(audit_id: str) -> AuditRunState {
     has view: AuditRunView | None = None;
     has engagementFindings: list[EngagementFinding] = [];
-    has experimentIdeas: list[ExperimentIdea] = [];
     has loading: bool = False;
     has error: str = "";
     has exported: ExportReport | None = None;
@@ -52,11 +48,8 @@ def:pub useAuditRun(audit_id: str) -> AuditRunState {
                 error = loaded_view.message;
             }
             loaded_engagement: list[EngagementFinding] = [];
-            loaded_experiments: list[ExperimentIdea] = [];
             loaded_engagement = await list_engagement_findings(audit_id);
-            loaded_experiments = await list_experiment_ideas(audit_id);
             engagementFindings = loaded_engagement;
-            experimentIdeas = loaded_experiments;
         } except Exception as e {
             error = f"Could not load audit: {e}";
         }
@@ -82,7 +75,6 @@ def:pub useAuditRun(audit_id: str) -> AuditRunState {
     return AuditRunState(
         view=view,
         engagementFindings=engagementFindings,
-        experimentIdeas=experimentIdeas,
         loading=loading,
         error=error,
         exported=exported,

@@ -121,10 +121,6 @@ def:pub AuditDetailPage() -> JsxElement {
         navigate("/audits/" + audit_id + "/retention");
     }
 
-    def goExperiments() -> None {
-        navigate("/audits/" + audit_id + "/experiments");
-    }
-
     def closeExport() -> None {
         showExport = False;
     }
@@ -146,7 +142,6 @@ def:pub AuditDetailPage() -> JsxElement {
             <TabList>
                 <TabButton active={True} onClick={goOverview}>Overview</TabButton>
                 <TabButton onClick={goRetention}>Loop findings</TabButton>
-                <TabButton onClick={goExperiments}>Experiments</TabButton>
             </TabList>
         </Tabs>
 
@@ -256,7 +251,7 @@ def:pub AuditDetailPage() -> JsxElement {
                 <p>{visual_summary}</p>
                 <p>{legal_filter_summary}</p>
                 <div className="action-row">
-                    <RuntimeLink className="table-link" to={"/audits/" + audit_id + "/experiments"}>Open experiment backlog</RuntimeLink>
+                    <RuntimeLink className="table-link" to={"/audits/" + audit_id + "/retention"}>Open loop findings</RuntimeLink>
                     <Badge tone="neutral">{snapshots_count} snapshots</Badge>
                     <Badge tone="neutral">{visual_count} screenshots</Badge>
                     <Badge tone="neutral">{interaction_count} clicks</Badge>

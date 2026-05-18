@@ -1,19 +1,15 @@
 [project]
-name = "engagement-auditor"
+name = "flair-auditor"
 version = "0.1.0"
 
 [serve]
 base_route_app = "app"
-
-[plugins.client]
-enabled = true
 
 [plugins.byllm.model]
 default_model = "gpt-4o"
 
 [plugins.byllm.call_params]
 temperature = 0.2
-
 
 [dependencies]
 byllm = "*"

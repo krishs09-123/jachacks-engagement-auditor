@@ -15,7 +15,6 @@ obj:pub FindingListItem {
     has research_basis: str = "";
     has fix_guidance: str = "";
     has exact_ui_or_copy_tip: str = "";
-    has experiment_hypothesis: str = "";
     has primary_metric: str = "";
     has guardrail_metric: str = "";
 }
@@ -80,11 +79,7 @@ def:pub FindingList(findings: list[FindingListItem] = []) -> JsxElement {
                         <dd>{finding.exact_ui_or_copy_tip}</dd>
                     </div>
                     <div>
-                        <dt>Hypothesis</dt>
-                        <dd>{finding.experiment_hypothesis}</dd>
-                    </div>
-                    <div>
-                        <dt>Metrics</dt>
+                        <dt>Signals to watch</dt>
                         <dd>{finding.primary_metric} guarded by {finding.guardrail_metric}</dd>
                     </div>
                 </dl>

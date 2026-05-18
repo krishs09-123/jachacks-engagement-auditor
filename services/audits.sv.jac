@@ -1,4 +1,5 @@
 import traceback;
+import json;
 import from services.models {
     Project,
     AuditRun,
@@ -9,13 +10,11 @@ import from services.models {
     VisualAuditResult,
     EngagementFinding,
     Recommendation,
-    ExperimentIdea,
     RubricVersion,
     AuditMutationResult,
     AuditRunView,
     ExportReport,
     DeterministicSignal,
-    ExperimentIdeaDraft,
     LlmFindingDraft,
     LlmAuditBundle,
 }
@@ -111,7 +110,6 @@ def visual_signals(visual_snapshots: list[VisualSnapshot], interaction_steps: li
                 recommendation="Improve visual hierarchy so the next useful action, feedback, and sense of progress are easier to perceive in the screenshot.",
                 fix_guidance="Use the screenshot as the target state: make one primary action dominant, group related controls, reduce competing secondary actions, and add visible progress or feedback near the action.",
                 exact_ui_or_copy_tip="Use one dominant next action, stronger heading contrast, clearer spacing groups, and reduce competing visual weight around secondary actions.",
-                experiment_hypothesis="If the interface reduces choice clutter and makes progress easier to see, more users will complete a useful session and remember how to return.",
                 primary_metric="completed core actions",
                 guardrail_metric="rage clicks, opt-outs, complaints, and support tickets",
                 estimated_effort="medium",
@@ -136,7 +134,6 @@ def visual_signals(visual_snapshots: list[VisualSnapshot], interaction_steps: li
                 recommendation="Reduce post-click uncertainty and make state changes, navigation, and next actions immediately legible.",
                 fix_guidance="Treat the post-click screenshot as the failing state: add a clear state title, selected/active state, success feedback, or next-step CTA in the same visual group as the clicked component.",
                 exact_ui_or_copy_tip="After interaction, show a clear page/state title, selected state, progress cue, or next-step CTA within the same visual group.",
-                experiment_hypothesis="If each interactive component gives clearer feedback and next-step affordances, task success and return intent will improve.",
                 primary_metric="task completion rate",
                 guardrail_metric="backtracking, rage clicks, and support tickets",
                 estimated_effort="medium",
@@ -216,7 +213,7 @@ def contains_unsafe_dark_pattern(text: str) -> bool {
 }
 
 def legalize_draft(draft: LlmFindingDraft) -> LlmFindingDraft {
-    combined: str = draft.recommendation + " " + draft.exact_ui_or_copy_tip + " " + draft.experiment_hypothesis;
+    combined: str = draft.recommendation + " " + draft.exact_ui_or_copy_tip + " " + draft.fix_guidance;
     if draft.legal_safe and not contains_unsafe_dark_pattern(combined) {
         return draft;
     }
@@ -235,7 +232,6 @@ def legalize_draft(draft: LlmFindingDraft) -> LlmFindingDraft {
         recommendation="Use the same retention intent only with truthful, user-controlled cues, progress, feedback, consent, and easy exits.",
         fix_guidance="Keep the same product goal, but prove value with real user benefit and give the user control over reminders, visibility, and exits.",
         exact_ui_or_copy_tip="Replace pressure copy with clear value and control. Example: 'Resume your saved task' plus 'pause reminders' instead of threat-based streak loss.",
-        experiment_hypothesis="If the product replaces manipulative pressure with truthful feedback and user control, repeat use can improve without increasing complaints.",
         primary_metric=draft.primary_metric,
         guardrail_metric="complaints, refunds, unsubscribe rate, and consent opt-out rate",
         estimated_effort=draft.estimated_effort,
@@ -260,24 +256,11 @@ def draft_for_lane(draft: LlmFindingDraft, lane: str) -> LlmFindingDraft {
         recommendation=draft.recommendation,
         fix_guidance=draft.fix_guidance,
         exact_ui_or_copy_tip=draft.exact_ui_or_copy_tip,
-        experiment_hypothesis=draft.experiment_hypothesis,
         primary_metric=draft.primary_metric,
         guardrail_metric=draft.guardrail_metric,
         estimated_effort=draft.estimated_effort,
         expected_impact=draft.expected_impact,
         legal_safe=draft.legal_safe,
-    );
-}
-
-def experiment_for_lane(draft: ExperimentIdeaDraft, lane: str) -> ExperimentIdeaDraft {
-    return ExperimentIdeaDraft(
-        lane_retention_or_conversion=lane,
-        title=draft.title,
-        hypothesis=draft.hypothesis,
-        primary_metric=draft.primary_metric,
-        guardrail_metric=draft.guardrail_metric,
-        estimated_effort=draft.estimated_effort,
-        expected_impact=draft.expected_impact,
     );
 }
 
@@ -297,7 +280,6 @@ def draft_from_signal(signal: DeterministicSignal) -> LlmFindingDraft {
         recommendation=signal.recommendation,
         fix_guidance=signal.fix_guidance,
         exact_ui_or_copy_tip=signal.exact_ui_or_copy_tip,
-        experiment_hypothesis=signal.experiment_hypothesis,
         primary_metric=signal.primary_metric,
         guardrail_metric=signal.guardrail_metric,
         estimated_effort=signal.estimated_effort,
@@ -308,19 +290,9 @@ def draft_from_signal(signal: DeterministicSignal) -> LlmFindingDraft {
 
 def fallback_bundle(lane: str, signals: list[DeterministicSignal], score: int) -> LlmAuditBundle {
     findings: list[LlmFindingDraft] = [];
-    experiments: list[ExperimentIdeaDraft] = [];
     for signal in signals {
         if signal.lane_retention_or_conversion == lane {
             findings.append(draft_from_signal(signal));
-            experiments.append(ExperimentIdeaDraft(
-                lane_retention_or_conversion=lane,
-                title=signal.category,
-                hypothesis=signal.experiment_hypothesis,
-                primary_metric=signal.primary_metric,
-                guardrail_metric=signal.guardrail_metric,
-                estimated_effort=signal.estimated_effort,
-                expected_impact=signal.expected_impact,
-            ));
         }
     }
     if len(findings) == 0 {
@@ -339,7 +311,6 @@ def fallback_bundle(lane: str, signals: list[DeterministicSignal], score: int) -
             recommendation="Instrument the full funnel and add one clear, measurable product improvement tied to this lane.",
             fix_guidance="Add event tracking and rerun the audit after the app exposes the key user journey and screenshot states.",
             exact_ui_or_copy_tip="Add a short next-step module that names the action, outcome, and risk reducer.",
-            experiment_hypothesis="If the next step is made clearer and measured, the team will identify the highest-leverage improvement in the next launch cycle.",
             primary_metric=lane + " score",
             guardrail_metric="support tickets and complaint rate",
             estimated_effort="low",
@@ -372,7 +343,144 @@ def fallback_bundle(lane: str, signals: list[DeterministicSignal], score: int) -
         dark_pattern_risk_score=0,
         dark_pattern_risk_reasons=[],
         findings=findings,
-        experiments=experiments,
+    );
+}
+
+def llm_json_payload(text: str) -> str {
+    cleaned: str = text.strip();
+    if cleaned.startswith("```json") {
+        cleaned = cleaned[7:].strip();
+    } elif cleaned.startswith("```") {
+        cleaned = cleaned[3:].strip();
+    }
+    if cleaned.endswith("```") {
+        cleaned = cleaned[:-3].strip();
+    }
+    start_idx: int = cleaned.find("{");
+    end_idx: int = cleaned.rfind("}");
+    if start_idx >= 0 and end_idx >= start_idx {
+        return cleaned[start_idx:end_idx + 1];
+    }
+    return cleaned;
+}
+
+def json_str(data: Any, key: str, fallback_value: str) -> str {
+    try {
+        value: str = str(data[key]);
+        if value == "None" {
+            return fallback_value;
+        }
+        return value;
+    } except Exception as e {
+        return fallback_value;
+    }
+}
+
+def json_int(data: Any, key: str, fallback_value: int) -> int {
+    try {
+        return int(data[key]);
+    } except Exception as e {
+        return fallback_value;
+    }
+}
+
+def json_float(data: Any, key: str, fallback_value: float) -> float {
+    try {
+        return float(data[key]);
+    } except Exception as e {
+        return fallback_value;
+    }
+}
+
+def json_bool(data: Any, key: str, fallback_value: bool) -> bool {
+    try {
+        return bool(data[key]);
+    } except Exception as e {
+        return fallback_value;
+    }
+}
+
+def json_string_list(data: Any, key: str) -> list[str] {
+    values: list[str] = [];
+    try {
+        raw = data[key];
+        for item in raw {
+            values.append(str(item));
+        }
+    } except Exception as e {
+        return values;
+    }
+    return values;
+}
+
+def bounded_confidence(value: float) -> float {
+    if value < 0.0 {
+        return 0.0;
+    }
+    if value > 1.0 {
+        return 1.0;
+    }
+    return value;
+}
+
+def parse_llm_findings(data: Any) -> list[LlmFindingDraft] {
+    findings: list[LlmFindingDraft] = [];
+    try {
+        raw_findings = data["findings"];
+        for item in raw_findings {
+            findings.append(LlmFindingDraft(
+                category=json_str(item, "category", "retention loop"),
+                lane_retention_or_conversion="retention",
+                severity=json_str(item, "severity", "medium"),
+                confidence=bounded_confidence(json_float(item, "confidence", 0.7)),
+                page_url=json_str(item, "page_url", ""),
+                issue_location=json_str(item, "issue_location", ""),
+                evidence_ref=json_str(item, "evidence_ref", ""),
+                evidence=json_str(item, "evidence", ""),
+                proof=json_str(item, "proof", ""),
+                why_it_matters=json_str(item, "why_it_matters", ""),
+                research_basis=json_str(item, "research_basis", ""),
+                recommendation=json_str(item, "recommendation", ""),
+                fix_guidance=json_str(item, "fix_guidance", ""),
+                exact_ui_or_copy_tip=json_str(item, "exact_ui_or_copy_tip", ""),
+                primary_metric=json_str(item, "primary_metric", "repeat sessions"),
+                guardrail_metric=json_str(item, "guardrail_metric", "complaints and opt-outs"),
+                estimated_effort=json_str(item, "estimated_effort", "medium"),
+                expected_impact=json_str(item, "expected_impact", "medium"),
+                legal_safe=json_bool(item, "legal_safe", True),
+            ));
+        }
+    } except Exception as e {
+        return findings;
+    }
+    return findings;
+}
+
+def parse_llm_bundle(result: str, signals: list[DeterministicSignal], score: int) -> LlmAuditBundle {
+    data: Any = json.loads(llm_json_payload(result));
+    findings: list[LlmFindingDraft] = parse_llm_findings(data);
+    if len(findings) == 0 {
+        return fallback_bundle("retention", signals, score);
+    }
+    return LlmAuditBundle(
+        score=bounded_score(json_int(data, "score", score)),
+        onboarding_activation=bounded_ten(json_int(data, "onboarding_activation", 5)),
+        habit_loop_strength=bounded_ten(json_int(data, "habit_loop_strength", 5)),
+        reward_design_feedback=bounded_ten(json_int(data, "reward_design_feedback", 5)),
+        social_retention_mechanics=bounded_ten(json_int(data, "social_retention_mechanics", 5)),
+        attention_capture_session_depth=bounded_ten(json_int(data, "attention_capture_session_depth", 5)),
+        personalization_adaptation=bounded_ten(json_int(data, "personalization_adaptation", 5)),
+        friction_reduction=bounded_ten(json_int(data, "friction_reduction", 5)),
+        progression_investment=bounded_ten(json_int(data, "progression_investment", 5)),
+        reentry_notification_systems=bounded_ten(json_int(data, "reentry_notification_systems", 5)),
+        trust_emotional_safety=bounded_ten(json_int(data, "trust_emotional_safety", 5)),
+        strengths=json_string_list(data, "strengths"),
+        weaknesses=json_string_list(data, "weaknesses"),
+        retention_risks=json_string_list(data, "retention_risks"),
+        highest_leverage_improvements=json_string_list(data, "highest_leverage_improvements"),
+        dark_pattern_risk_score=bounded_ten(json_int(data, "dark_pattern_risk_score", 0)),
+        dark_pattern_risk_reasons=json_string_list(data, "dark_pattern_risk_reasons"),
+        findings=findings,
     );
 }
 
@@ -381,8 +489,9 @@ def safe_retention_bundle(target_url: str, evidence_pack: str, signals: list[Det
     print(f"[LLM RUBRIC] Evidence pack chars={len(evidence_pack)}, deterministic signals={len(signals)}, deterministic score={score}");
     try {
         result: str = evaluate_retention_recommendations(target_url, evidence_pack, signals);
-        print(f"[LLM RUBRIC] Completed LLM rubric evaluation.");
-        return fallback_bundle("retention", signals, score);
+        bundle: LlmAuditBundle = parse_llm_bundle(result, signals, score);
+        print(f"[LLM RUBRIC] Completed LLM rubric evaluation with {len(bundle.findings)} loop finding(s).");
+        return bundle;
     } except Exception as e {
         print(f"[LLM RUBRIC] LLM rubric evaluation failed; using deterministic fallback. Error: {str(e)}");
         print(traceback.format_exc());
@@ -425,7 +534,6 @@ def create_engagement_finding(audit: AuditRun, draft: LlmFindingDraft) -> Engage
         recommendation=safe_draft.recommendation,
         fix_guidance=fix_guidance,
         exact_ui_or_copy_tip=safe_draft.exact_ui_or_copy_tip,
-        experiment_hypothesis=safe_draft.experiment_hypothesis,
         primary_metric=safe_draft.primary_metric,
         guardrail_metric=safe_draft.guardrail_metric,
         estimated_effort=safe_draft.estimated_effort,
@@ -453,35 +561,6 @@ def create_recommendation(audit: AuditRun, finding_id: str, draft: LlmFindingDra
     rec: Recommendation = created[0];
     rec.uid = jid(rec); # jac:ignore[E1005]
     return rec;
-}
-
-def create_experiment(audit: AuditRun, draft: ExperimentIdeaDraft) -> ExperimentIdea {
-    safe_draft: ExperimentIdeaDraft = draft;
-    if contains_unsafe_dark_pattern(draft.title + " " + draft.hypothesis) {
-        safe_draft = ExperimentIdeaDraft(
-            lane_retention_or_conversion=draft.lane_retention_or_conversion,
-            title="Truthful proof and control test",
-            hypothesis="If the product replaces manipulative urgency or proof with verified facts, clear terms, and user control, repeat use can improve without increasing complaints.",
-            primary_metric=draft.primary_metric,
-            guardrail_metric="complaints, refunds, unsubscribe rate, and consent opt-out rate",
-            estimated_effort=draft.estimated_effort,
-            expected_impact=draft.expected_impact,
-        );
-    }
-    created = audit ++> ExperimentIdea(
-        audit_id=audit.uid,
-        lane_retention_or_conversion=safe_draft.lane_retention_or_conversion,
-        title=safe_draft.title,
-        hypothesis=safe_draft.hypothesis,
-        primary_metric=safe_draft.primary_metric,
-        guardrail_metric=safe_draft.guardrail_metric,
-        estimated_effort=safe_draft.estimated_effort,
-        expected_impact=safe_draft.expected_impact,
-        status="backlog",
-    );
-    idea: ExperimentIdea = created[0];
-    idea.uid = jid(idea); # jac:ignore[E1005]
-    return idea;
 }
 
 def:priv start_audit(project_id: str, url: str = "") -> AuditMutationResult {
@@ -554,17 +633,13 @@ def:priv start_audit(project_id: str, url: str = "") -> AuditMutationResult {
     legal_rewrites: int = 0;
     for draft in retention_bundle.findings {
         retention_draft: LlmFindingDraft = draft_for_lane(draft, "retention");
-        before_safe: bool = retention_draft.legal_safe and not contains_unsafe_dark_pattern(retention_draft.recommendation + " " + retention_draft.exact_ui_or_copy_tip);
+        before_safe: bool = retention_draft.legal_safe and not contains_unsafe_dark_pattern(retention_draft.recommendation + " " + retention_draft.exact_ui_or_copy_tip + " " + retention_draft.fix_guidance);
         finding: EngagementFinding = create_engagement_finding(audit, retention_draft);
         if not before_safe {
             legal_rewrites += 1;
         }
         create_recommendation(audit, finding.uid, retention_draft);
     }
-    for experiment in retention_bundle.experiments {
-        create_experiment(audit, experiment_for_lane(experiment, "retention"));
-    }
-
     audit.retention_score = blended_score(rubric_overall(retention_bundle), deterministic_retention_score); # jac:ignore[E1005]
     audit.visual_score = visual.visual_score; # jac:ignore[E1005]
     audit.interaction_score = visual.interaction_score; # jac:ignore[E1005]
@@ -646,22 +721,6 @@ def:priv list_engagement_findings(audit_id: str) -> list[EngagementFinding] {
     return findings;
 }
 
-def:priv list_experiment_ideas(audit_id: str) -> list[ExperimentIdea] {
-    ideas: list[ExperimentIdea] = [];
-    for project in [root -->][?:Project] {
-        for audit in [project -->][?:AuditRun] {
-            audit.uid = jid(audit); # jac:ignore[E1005]
-            if audit.uid == audit_id {
-                for idea in [audit -->][?:ExperimentIdea] {
-                    idea.uid = jid(idea); # jac:ignore[E1005]
-                    ideas.append(idea);
-                }
-            }
-        }
-    }
-    return ideas;
-}
-
 def:priv export_report(audit_id: str) -> ExportReport {
     for project in [root -->][?:Project] {
         project.uid = jid(project); # jac:ignore[E1005]
@@ -669,16 +728,11 @@ def:priv export_report(audit_id: str) -> ExportReport {
             audit.uid = jid(audit); # jac:ignore[E1005]
             if audit.uid == audit_id {
                 engagement: list[EngagementFinding] = [];
-                experiments: list[ExperimentIdea] = [];
                 visuals: list[VisualSnapshot] = [];
                 interactions: list[InteractionStep] = [];
                 for finding in [audit -->][?:EngagementFinding] {
                     finding.uid = jid(finding); # jac:ignore[E1005]
                     engagement.append(finding);
-                }
-                for idea in [audit -->][?:ExperimentIdea] {
-                    idea.uid = jid(idea); # jac:ignore[E1005]
-                    experiments.append(idea);
                 }
                 for visual_snapshot in [audit -->][?:VisualSnapshot] {
                     visual_snapshot.uid = jid(visual_snapshot); # jac:ignore[E1005]
@@ -762,10 +816,6 @@ def:priv export_report(audit_id: str) -> ExportReport {
                     lines.append(f"  - Why it matters: {item.why_it_matters}");
                     lines.append(f"  - Fix: {item.fix_guidance}");
                     lines.append(f"  - Exact tip: {item.exact_ui_or_copy_tip}");
-                }
-                lines.append("## Experiment Backlog");
-                for idea in experiments {
-                    lines.append(f"- {idea.title} ({idea.lane_retention_or_conversion}): {idea.hypothesis} Primary: {idea.primary_metric}; Guardrail: {idea.guardrail_metric}");
                 }
                 return ExportReport(ok=True, filename=f"engagement-auditor-{audit.uid}.md", markdown="\n".join(lines));
             }

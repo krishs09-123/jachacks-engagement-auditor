@@ -117,7 +117,6 @@ node EngagementFinding {
     has recommendation: str = "";
     has fix_guidance: str = "";
     has exact_ui_or_copy_tip: str = "";
-    has experiment_hypothesis: str = "";
     has primary_metric: str = "";
     has guardrail_metric: str = "";
     has estimated_effort: str = "medium";
@@ -136,19 +135,6 @@ node Recommendation {
     has estimated_effort: str = "";
     has expected_impact: str = "";
     has legal_safe: bool = True;
-}
-
-node ExperimentIdea {
-    has audit_id: str;
-    has uid: str = "";
-    has lane_retention_or_conversion: str = "";
-    has title: str = "";
-    has hypothesis: str = "";
-    has primary_metric: str = "";
-    has guardrail_metric: str = "";
-    has estimated_effort: str = "";
-    has expected_impact: str = "";
-    has status: str = "backlog";
 }
 
 node RubricVersion {
@@ -246,7 +232,6 @@ obj DeterministicSignal {
     has recommendation: str = "";
     has fix_guidance: str = "";
     has exact_ui_or_copy_tip: str = "";
-    has experiment_hypothesis: str = "";
     has primary_metric: str = "";
     has guardrail_metric: str = "";
     has estimated_effort: str = "medium";
@@ -268,8 +253,7 @@ sem DeterministicSignal.research_basis = "Relevant research basis explained in c
 sem DeterministicSignal.recommendation = "Practical product change suggested by the deterministic audit.";
 sem DeterministicSignal.fix_guidance = "How to address the issue and why that fix follows from the evidence.";
 sem DeterministicSignal.exact_ui_or_copy_tip = "Specific UI or copy change, not a vague critique.";
-sem DeterministicSignal.experiment_hypothesis = "A falsifiable experiment hypothesis.";
-sem DeterministicSignal.primary_metric = "Primary metric the experiment should move.";
+sem DeterministicSignal.primary_metric = "Primary metric or product signal the recommendation should improve.";
 sem DeterministicSignal.guardrail_metric = "Metric that should not get worse, such as refund rate, unsubscribe rate, support tickets, or consent opt-out rate.";
 sem DeterministicSignal.estimated_effort = "Implementation effort: low, medium, or high.";
 sem DeterministicSignal.expected_impact = "Expected impact: low, medium, or high.";
@@ -288,25 +272,6 @@ sem InteractionStep.result = "Whether the click navigated, changed state, or sta
 sem InteractionStep.friction_score = "0-100 interaction friction score; higher means more uncertainty or effort after the click.";
 sem InteractionStep.visual_notes = "Post-click screenshot notes about feedback, hierarchy, clarity, and next-step affordances.";
 
-obj ExperimentIdeaDraft {
-    has lane_retention_or_conversion: str = "";
-    has title: str = "";
-    has hypothesis: str = "";
-    has primary_metric: str = "";
-    has guardrail_metric: str = "";
-    has estimated_effort: str = "medium";
-    has expected_impact: str = "medium";
-}
-
-sem ExperimentIdeaDraft = "A legal retention experiment idea derived from audited evidence and behavioral science.";
-sem ExperimentIdeaDraft.lane_retention_or_conversion = "Use 'retention'.";
-sem ExperimentIdeaDraft.title = "Short experiment name.";
-sem ExperimentIdeaDraft.hypothesis = "If we change X for audience Y, then metric Z will improve because of evidence/research.";
-sem ExperimentIdeaDraft.primary_metric = "The main metric to improve.";
-sem ExperimentIdeaDraft.guardrail_metric = "A metric that guards against deceptive or harmful optimization.";
-sem ExperimentIdeaDraft.estimated_effort = "low, medium, or high.";
-sem ExperimentIdeaDraft.expected_impact = "low, medium, or high.";
-
 obj LlmFindingDraft {
     has category: str = "";
     has lane_retention_or_conversion: str = "";
@@ -322,7 +287,6 @@ obj LlmFindingDraft {
     has recommendation: str = "";
     has fix_guidance: str = "";
     has exact_ui_or_copy_tip: str = "";
-    has experiment_hypothesis: str = "";
     has primary_metric: str = "";
     has guardrail_metric: str = "";
     has estimated_effort: str = "medium";
@@ -345,7 +309,6 @@ sem LlmFindingDraft.research_basis = "Name the research/framework only after exp
 sem LlmFindingDraft.recommendation = "Practical product recommendation, phrased as an action a builder can take.";
 sem LlmFindingDraft.fix_guidance = "Proof-backed fix: what to change, where to change it, and why that change addresses the observed issue.";
 sem LlmFindingDraft.exact_ui_or_copy_tip = "Exact interface or copy tip the team can ship.";
-sem LlmFindingDraft.experiment_hypothesis = "Falsifiable A/B test or product experiment hypothesis.";
 sem LlmFindingDraft.primary_metric = "Broad retention indicator such as returning users, repeat sessions, completed core actions, or resumed saved tasks. Do not invent precise named-day retention or lift claims.";
 sem LlmFindingDraft.guardrail_metric = "Metric that prevents harmful or deceptive optimization, such as opt-outs, complaints, unsubscribes, support requests, or user-reported control.";
 sem LlmFindingDraft.estimated_effort = "low, medium, or high.";
@@ -371,7 +334,6 @@ obj LlmAuditBundle {
     has dark_pattern_risk_score: int = 0;
     has dark_pattern_risk_reasons: list[str] = [];
     has findings: list[LlmFindingDraft] = [];
-    has experiments: list[ExperimentIdeaDraft] = [];
 }
 
 sem LlmAuditBundle = "A retention-only audit result following the B2C Web App Retention & Engagement Evaluation Rubric v1.0.";
@@ -393,4 +355,3 @@ sem LlmAuditBundle.highest_leverage_improvements = "Highest-leverage improvement
 sem LlmAuditBundle.dark_pattern_risk_score = "0-10 dark pattern risk score where 0-2 is minimal and 9-10 is highly exploitative.";
 sem LlmAuditBundle.dark_pattern_risk_reasons = "Observed reasons for the dark-pattern risk score. Use an empty list or minimal reasons when risk is low.";
 sem LlmAuditBundle.findings = "Concrete, evidence-backed retention and behavioral-loop findings.";
-sem LlmAuditBundle.experiments = "Prioritized experiment ideas that remain legal and truthful.";

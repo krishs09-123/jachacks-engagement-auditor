@@ -82,7 +82,7 @@ def:pub ProjectDetailPage() -> JsxElement {
         {project is not None and <div className="two-column">
             <Card>
                 <CardHeader>
-                    <CardTitle>Start audit</CardTitle>
+                    <CardTitle>Start audit</CardTitle>  
                     <CardDescription>Crawler budget is capped and unsafe URLs are rejected before fetching.</CardDescription>
                 </CardHeader>
                 <CardContent>

@@ -71,6 +71,34 @@ CLICK_JS = r"""
 """
 
 
+PAGE_METRICS_JS = r"""
+(() => {
+  const body = document.body || {};
+  const doc = document.documentElement || {};
+  const scrollHeight = Math.max(
+    body.scrollHeight || 0,
+    body.offsetHeight || 0,
+    doc.clientHeight || 0,
+    doc.scrollHeight || 0,
+    doc.offsetHeight || 0
+  );
+  return {
+    scrollHeight,
+    innerHeight: window.innerHeight || 900,
+    scrollY: window.scrollY || 0
+  };
+})()
+"""
+
+
+SCROLL_TO_JS = r"""
+((y) => {
+  window.scrollTo({ top: Math.max(0, y), behavior: "instant" });
+  return window.scrollY || 0;
+})
+"""
+
+
 def find_chrome() -> str | None:
     for path in CHROME_CANDIDATES:
         if os.path.exists(path):
@@ -300,6 +328,35 @@ def capture(cdp: CDP, output_dir: Path, name: str, action: str, clickable_count:
     }
 
 
+def capture_scroll_pass(cdp: CDP, output_dir: Path, prefix: str) -> list[dict[str, Any]]:
+    metrics = eval_js(cdp, PAGE_METRICS_JS) or {}
+    scroll_height = int(metrics.get("scrollHeight") or 0)
+    viewport_height = int(metrics.get("innerHeight") or 900)
+    max_y = max(0, scroll_height - viewport_height)
+    positions: list[int] = [0]
+    if max_y > 0:
+        positions.append(max_y // 2)
+        positions.append(max_y)
+    screenshots: list[dict[str, Any]] = []
+    seen_positions: set[int] = set()
+    for idx, y in enumerate(positions):
+        if y in seen_positions:
+            continue
+        seen_positions.add(y)
+        eval_js(cdp, f"{SCROLL_TO_JS}({int(y)})")
+        time.sleep(0.8)
+        clickables = eval_js(cdp, CLICKABLE_JS) or []
+        label = "full-page top"
+        if idx == 1 and y != 0:
+            label = "full-page middle"
+        if y == max_y and max_y > 0:
+            label = "full-page bottom"
+        screenshots.append(capture(cdp, output_dir, f"{prefix}_scroll_{idx + 1}", label, len(clickables)))
+    eval_js(cdp, f"{SCROLL_TO_JS}(0)")
+    time.sleep(0.3)
+    return screenshots
+
+
 def same_origin(url: str, href: str) -> bool:
     try:
         from urllib.parse import urlparse
@@ -360,7 +417,7 @@ def run(url: str, output_dir: Path, max_clicks: int) -> dict[str, Any]:
             item for item in clickables
             if item.get("safe") and same_origin(url, item.get("href", "")) and item.get("text")
         ][:max_clicks]
-        screenshots = [capture(cdp, output_dir, "initial", "initial page load", len(clickables))]
+        screenshots = capture_scroll_pass(cdp, output_dir, "initial")
         interactions: list[dict[str, Any]] = []
         for i, item in enumerate(safe_clickables):
             cdp.call("Page.navigate", {"url": url})
