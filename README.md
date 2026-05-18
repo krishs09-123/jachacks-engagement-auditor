@@ -1,6 +1,6 @@
-# Growth Lab
+# Flair
 
-Growth Lab is a Jac fullstack app for auditing consumer app retention loops, screenshot-based UX/design psychology, and manipulative engagement risk. It crawls a public URL, captures sanitized page evidence, takes safe headless-browser screenshots, clicks only safe same-origin components, and asks an LLM for builder-friendly recommendations.
+Flair is a Jac fullstack app for auditing consumer app retention loops, screenshot-based UX/design psychology, and manipulative engagement risk. It crawls a public URL, captures sanitized page evidence, takes safe headless-browser screenshots, clicks only safe same-origin components, and asks an LLM for builder-friendly recommendations.
 
 ## What You Need
 
