@@ -1,6 +1,6 @@
 # Flair
 
-Flair is a Jac fullstack app for auditing consumer app retention loops, screenshot-based UX/design psychology, and manipulative engagement risk. It crawls a public URL, captures sanitized page evidence, takes safe headless-browser screenshots, clicks only safe same-origin components, and asks an LLM for builder-friendly recommendations.
+Flair is a full-stack agentic AI made primarily with Jac for auditing consumer app UI/UX. It crawls a public URL, captures sanitized page evidence, takes safe headless-browser screenshots, clicks only safe same-origin components, and asks an LLM for builder-friendly recommendations.
 
 ## What You Need
 
@@ -8,6 +8,7 @@ Install these before running the app from a fresh machine:
 
 - Git, to clone the repository.
 - Python 3.11 or newer. The app has been run locally with Python 3.14.
+- Jac, to run the code
 - Node.js 20 or newer, including `npm`, for the Jac-generated React/Vite client.
 - Google Chrome or Microsoft Edge. The visual audit helper launches one of these in headless mode for screenshots.
 - An OpenAI API key. The app uses `byllm` with `gpt-4o`, so `OPENAI_API_KEY` must be available in the shell that starts the server.
